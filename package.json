@@ -5,9 +5,9 @@
   "scripts": {
     "start": "npm run build && cross-env NODE_ENV=development node dist/index.js",
     "dev": "cross-env NODE_ENV=development ts-node-dev -r tsconfig-paths/register src/index.ts",
-    "prod": "npm i && npm run build && pm2-runtime ecosystem.config.js --only prod_api",
+    "prod": "npx pm2-runtime ecosystem.config.js --only prod_api",
     "seed": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/scripts/seed.ts",
-    "build": "tsc -b && tsc-alias",
+    "build": "npm i && tsc -b && tsc-alias",
     "lint": "eslint --ignore-path .gitignore --ext .ts src/",
     "lint:fix": "npm run lint -- --fix",
     "test:watch": "cross-env NODE_ENV=test jest  --runInBand --verbose --watchAll",

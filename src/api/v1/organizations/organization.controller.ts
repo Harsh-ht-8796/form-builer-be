@@ -25,7 +25,7 @@ export class OrganizationController {
   @Authorized([UserRole.SUPER_ADMIN])
   async create(@Body() organizationData: OrganizationDto, @CurrentUser() user: IUserSchema) {
     const createdBy = user?._id?.toString();
-    const organization = await this.organizationService.create({ ...organizationData });
+    const organization = await this.organizationService.create({ ...organizationData, createdBy });
     return organization;
   }
 

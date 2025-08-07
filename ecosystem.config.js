@@ -21,7 +21,7 @@ module.exports = {
         repo: 'GIT_REPOSITORY',
         path: 'DESTINATION_PATH',
         'pre-deploy-local': '',
-        'post-deploy': 'yarn install && yarn run build && pm2 reload ecosystem.config.js --only prod_api',
+        'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --only prod_api',
         'pre-setup': '',
       },
     },

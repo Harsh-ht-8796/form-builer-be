@@ -96,6 +96,7 @@ export default class App {
 
   public initWebServer = async () => {
     return new Promise(resolve => {
+      console.log(`✅ http://localhost:${this.port}`);
       this.serverConnection = this.app.listen(this.port, () => {
         console.log(`✅  Ready on port http://localhost:${this.port}`);
         resolve(this.serverConnection?.address());

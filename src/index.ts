@@ -9,6 +9,7 @@ import {
 import { AuthControllerV1, FormControllerV1, OrganizationControllerV1, SubmissionControllerV1, UserControllerV1 } from '@v1/index';
 
 import App from './app';
+import { PORT } from '@config';
 
 function initSwagger(server: App) {
   const schemas = validationMetadatasToSchemas({
@@ -42,6 +43,7 @@ const server = new App([AuthControllerV1, UserControllerV1, SubmissionController
 initSwagger(server);
 
 (async () => {
+  console.log(`✅  Ready on port http://localhost:${PORT}`);
   await server.initServerWithDB();
 })();
 

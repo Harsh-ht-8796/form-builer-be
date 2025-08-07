@@ -27,7 +27,7 @@ import path from 'path';
  const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => {
-      cb(null, path.join(__dirname, '../../../../uploads'));
+      cb(null, path.join(__dirname, '../../../../../uploads'));
     },
     filename: (_req, file, cb) => {
       const safeName = `${Date.now()}-${Math.random().toString(36).substr(2,6)}${path.extname(file.originalname)}`;

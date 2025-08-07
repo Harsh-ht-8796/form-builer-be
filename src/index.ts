@@ -11,36 +11,36 @@ import { AuthControllerV1, FormControllerV1, OrganizationControllerV1, Submissio
 import App from './app';
 import { PORT } from '@config';
 
-function initSwagger(server: App) {
-  const schemas = validationMetadatasToSchemas({
-    classValidatorMetadataStorage: getMetadataStorage(),
-    refPointerPrefix: '#/components/schemas/',
-  });
-  const routingControllersOptions = {
-    controllers: server.getControllers,
-  };
-  const storage = getMetadataArgsStorage();
-  const spec = routingControllersToSpec(storage, routingControllersOptions, {
-    components: {
-      schemas,
-      securitySchemes: {
-        basicAuth: {
-          scheme: 'basic',
-          type: 'http',
-        },
-      },
-    },
-    info: {
-      description: 'API Generated with `routing-controllers-openapi` package',
-      title: 'API',
-      version: '1.0.0',
-    },
-  });
-  server.getServer().use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec));
-}
+// function initSwagger(server: App) {
+//   const schemas = validationMetadatasToSchemas({
+//     classValidatorMetadataStorage: getMetadataStorage(),
+//     refPointerPrefix: '#/components/schemas/',
+//   });
+//   const routingControllersOptions = {
+//     controllers: server.getControllers,
+//   };
+//   const storage = getMetadataArgsStorage();
+//   const spec = routingControllersToSpec(storage, routingControllersOptions, {
+//     components: {
+//       schemas,
+//       securitySchemes: {
+//         basicAuth: {
+//           scheme: 'basic',
+//           type: 'http',
+//         },
+//       },
+//     },
+//     info: {
+//       description: 'API Generated with `routing-controllers-openapi` package',
+//       title: 'API',
+//       version: '1.0.0',
+//     },
+//   });
+//   server.getServer().use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec));
+// }
 
 const server = new App([AuthControllerV1, UserControllerV1, SubmissionControllerV1, FormControllerV1, OrganizationControllerV1]);
-initSwagger(server);
+// initSwagger(server);
 
 (async () => {
   console.log(`✅  Ready on port http://localhost:${PORT}`);

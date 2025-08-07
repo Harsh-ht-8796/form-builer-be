@@ -105,10 +105,12 @@ export default class App {
   };
 
   public initServerWithDB = async () => {
+    console.log("Called initServerDB")
     await Promise.all([App.initDB(), this.initWebServer()]);
   };
 
   public stopWebServer = async () => {
+    console.log("Called stopWebServer")
     return new Promise(resolve => {
       this.serverConnection?.close(() => {
         resolve(void 0);

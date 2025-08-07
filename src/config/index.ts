@@ -12,7 +12,7 @@ const checkEnv = (envVar: string, defaultValue?: string) => {
   }
 };
 
-export const PORT: number = parseInt(checkEnv('PORT'), 10);
+export const PORT: number = parseInt(process.env.PORT || '3000', 10);
 export const MONGO_URI: string = checkEnv('MONGO_URI');
 export const DATABASE: string = checkEnv('DATABASE');
 export const CORS_ORIGINS = JSON.parse(checkEnv('CORS_ORIGINS'));

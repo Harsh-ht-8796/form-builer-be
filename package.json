@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "start": "npm run build && cross-env NODE_ENV=production node dist/index.js",
+    "start": "npm run build && node dist/index.js",
     "dev": "cross-env NODE_ENV=development ts-node-dev -r tsconfig-paths/register src/index.ts",
     "prod": "npm run build && pm2 start ecosystem.config.js --only prod_api",
     "seed": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/scripts/seed.ts",

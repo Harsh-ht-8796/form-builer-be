@@ -31,7 +31,7 @@ const checkEnv = (envVar, defaultValue) => {
         return process.env[envVar];
     }
 };
-exports.PORT = parseInt(process.env.PORT || '3000', 10);
+exports.PORT = parseInt(checkEnv('PORT') || '3000', 10);
 exports.MONGO_URI = checkEnv('MONGO_URI');
 exports.DATABASE = checkEnv('DATABASE');
 exports.CORS_ORIGINS = JSON.parse(checkEnv('CORS_ORIGINS'));

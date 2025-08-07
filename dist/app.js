@@ -26,6 +26,7 @@ class App {
         this.controllers = [];
         this.initWebServer = async () => {
             return new Promise(resolve => {
+                console.log(`✅ http://localhost:${this.port}`);
                 this.serverConnection = this.app.listen(this.port, () => {
                     var _a;
                     console.log(`✅  Ready on port http://localhost:${this.port}`);
@@ -34,9 +35,11 @@ class App {
             });
         };
         this.initServerWithDB = async () => {
+            console.log("Called initServerDB");
             await Promise.all([App.initDB(), this.initWebServer()]);
         };
         this.stopWebServer = async () => {
+            console.log("Called stopWebServer");
             return new Promise(resolve => {
                 var _a;
                 (_a = this.serverConnection) === null || _a === void 0 ? void 0 : _a.close(() => {

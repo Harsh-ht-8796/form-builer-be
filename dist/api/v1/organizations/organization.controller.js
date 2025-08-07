@@ -31,7 +31,7 @@ let OrganizationController = class OrganizationController {
     async create(organizationData, user) {
         var _a;
         const createdBy = (_a = user === null || user === void 0 ? void 0 : user._id) === null || _a === void 0 ? void 0 : _a.toString();
-        const organization = await this.organizationService.create(Object.assign({}, organizationData));
+        const organization = await this.organizationService.create(Object.assign(Object.assign({}, organizationData), { createdBy }));
         return organization;
     }
     async get(id, next) {

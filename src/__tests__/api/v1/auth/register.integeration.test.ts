@@ -5,8 +5,9 @@ import { fakerData } from '@__tests__/jest/factories';
 import { userFactory } from '@__tests__/jest/factories';
 import App from '@app';
 import { AuthControllerV1 } from '@v1/index';
+import TestAgent from 'supertest/lib/agent';
 
-let server: SuperTest<Test>;
+let server: TestAgent<Test>;
 const baseUrl = '/api/v1/auth';
 
 describe('register test suit', () => {

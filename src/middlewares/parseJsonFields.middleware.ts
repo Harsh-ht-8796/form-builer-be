@@ -23,7 +23,7 @@ import { Request, Response, NextFunction } from 'express';
 //     };
 // }
 
-export const parseJsonFieldsMiddleware = (fieldsToParse: string[]) => (req, res, next) => {
+export const parseJsonFieldsMiddleware = (fieldsToParse: string[]) => (req: Request, res: Response, next: NextFunction) => {
     console.log('[parseJsonFields] Middleware called',req);
     console.log('[parseJsonFields] fieldsToParse:', fieldsToParse);
     console.log('[parseJsonFields] req.body at start:', req.body);
@@ -51,7 +51,7 @@ export const parseJsonFieldsMiddleware = (fieldsToParse: string[]) => (req, res,
         }
         console.log('[parseJsonFields] Final req.body after parsing:', req.body);
         next();
-    } catch (error) {
+    } catch (error: any) {
         return res.status(400).json({ message: `Invalid JSON in one of the fields: ${error.message}` });
     }
 };

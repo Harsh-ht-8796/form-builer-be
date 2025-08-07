@@ -60,12 +60,12 @@ export const FormResponseSchema = {
 };
 class FieldDto {
   @IsString()
-  @IsNotEmpty()
-  type: string;
+  @IsOptional()
+  type?: string;
 
   @IsString()
-  @IsNotEmpty()
-  label: string;
+  @IsOptional()
+  label?: string;
 
   @IsArray()
   @IsString({ each: true })
@@ -73,7 +73,8 @@ class FieldDto {
   options?: string[];
 
   @IsBoolean()
-  required: boolean;
+  @IsOptional()
+  required?: boolean;
 
   @IsOptional()
   position?: number;
@@ -81,8 +82,8 @@ class FieldDto {
 
 class SettingsDto {
   @IsString()
-  @IsNotEmpty()
-  backgroundColor: string;
+  @IsOptional()
+  backgroundColor?: string;
 
   @IsString()
   @IsOptional()
@@ -90,27 +91,26 @@ class SettingsDto {
 
   @IsArray()
   @IsString({ each: true })
-  emailNotifications: string[];
+  @IsOptional()
+  emailNotifications?: string[];
 
   @IsEnum(['public', 'private'])
-  visibility: 'public' | 'private';
+  @IsOptional()
+  visibility?: 'public' | 'private';
 }
 
 export default class CreateFormDto {
-  @IsString()
-  @IsNotEmpty()
-  orgId: string;
-
   @IsArray()
-  @IsNotEmpty()
-  fields: FieldDto[];
+  @IsOptional()
+  fields?: FieldDto[];
 
   @IsObject()
-  @IsNotEmpty()
-  settings: SettingsDto;
+  @IsOptional()
+  settings?: SettingsDto;
 
   @IsEnum(['draft', 'published'])
-  status: 'draft' | 'published';
+  @IsOptional()
+  status?: 'draft' | 'published' = 'draft';
 
   @IsString()
   @IsOptional()
@@ -121,8 +121,8 @@ export default class CreateFormDto {
   logoImageUrl?: string;
 
   @IsString()
-  @IsNotEmpty()
-  title: string;
+  @IsOptional()
+  title?: string;
 
   @IsString()
   @IsOptional()

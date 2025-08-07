@@ -1,124 +1,69 @@
-// eslint-disable-next-line simple-import-sort/imports
-import 'reflect-metadata';
-import { CORS_ORIGINS, CREDENTIALS, MONGO_URI, DATABASE, isProduction, PORT, SENTRY_DSN, jwtStrategy } from './config';
+import express, { Request, RequestHandler, Response } from "express";
+import http from "http";
 
-// import * as Sentry from '@sentry/node';
-import cookieParser from 'cookie-parser';
-import cors from 'cors';
-import express, { Application, ErrorRequestHandler, RequestHandler } from 'express';
-import helmet from 'helmet';
-import hpp from 'hpp';
-import http from 'http';
-import mongoose from 'mongoose';
-import passport from 'passport';
-import { useExpressServer } from 'routing-controllers';
-import { xss } from 'express-xss-sanitizer';
-import handlingErrorsMiddleware from './middlewares/handlingErrors.middleware';
-import { authorizationChecker, currentUserChecker } from './utils/routingControllersUtils';
-import logger from '@utils/logger';
-import morgan from 'morgan';
-import path from 'path';
+const app = express();
+const port = process.env.PORT || 3001;
 
-export default class App {
-  private app: Application;
-  private port: string | number;
-  private controllers: Function[] = [];
-  private serverConnection: http.Server | undefined;
-  constructor(controllers: Function[]) {
-    this.app = express();
-    logger.info(`✅  Ready on port http://localhost:${PORT}`);
-    this.port = '10000';
-    this.controllers = controllers;
-    this.initSentry();
-    this.initMiddlewares();
-    this.initRoutes(controllers);
-    this.initHandlingErrors();
-  }
+const html = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello from Render!</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          disableForReducedMotion: true
+        });
+      }, 500);
+    </script>
+    <style>
+      @import url("https://p.typekit.net/p.css?s=1&k=vnd5zic&ht=tk&f=39475.39476.39477.39478.39479.39480.39481.39482&a=18673890&app=typekit&e=css");
+      @font-face {
+        font-family: "neo-sans";
+        src: url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff2"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/a?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("opentype");
+        font-style: normal;
+        font-weight: 700;
+      }
+      html {
+        font-family: neo-sans;
+        font-weight: 700;
+        font-size: calc(62rem / 16);
+      }
+      body {
+        background: white;
+      }
+      section {
+        border-radius: 1em;
+        padding: 1em;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-right: -50%;
+        transform: translate(-50%, -50%);
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      Hello from Render!
+    </section>
+  </body>
+</html>
+`;
 
-  private initSentry() {
-    // if (isProduction) {
-    //   Sentry.init({ dsn: SENTRY_DSN });
-    //   this.app.use(Sentry.Handlers.requestHandler() as RequestHandler);
-    // }
-  }
+app.get("/", (_req: any, res: any) => {
+  res.type("html").send(html);
+});
 
-  private initMiddlewares() {
-    this.app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-    this.app.use(helmet());
-    this.app.use(cors({ origin: CORS_ORIGINS, credentials: CREDENTIALS }));
-    // this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
-    this.app.use(hpp());
-    this.app.use(xss());
-    this.app.use(
-      morgan('combined', {
-        stream: {
-          write: message => logger.info(message.trim()),
-        },
-      }),
-    );
-    this.app.use(cookieParser());
+const server = http.createServer(app);
 
-    // JWT authentication
-    this.app.use(passport.initialize());
-    passport.use('jwt', jwtStrategy);
-  }
+server.keepAliveTimeout = 120 * 1000;
+server.headersTimeout = 120 * 1000;
 
-  private initRoutes(controllers: Function[]) {
-    useExpressServer(this.app, {
-      cors: {
-        origin: CORS_ORIGINS,
-        credentials: CREDENTIALS,
-      },
-      routePrefix: '/api',
-      controllers: controllers,
-      defaultErrorHandler: false,
-      authorizationChecker,
-      currentUserChecker,
-    });
-  }
-
-  private initHandlingErrors() {
-    // if (isProduction) {
-    //   this.app.use(Sentry.Handlers.errorHandler() as ErrorRequestHandler);
-    // }
-    this.app.use(handlingErrorsMiddleware as ErrorRequestHandler);
-  }
-
-  static async initDB() {
-    await mongoose.connect(`${MONGO_URI}/${DATABASE}`);
-  }
-
-  static async closeDB() {
-    await mongoose.disconnect();
-  }
-
-  public initWebServer = async () => {
-    return new Promise(resolve => {
-      this.serverConnection = this.app.listen(this.port, () => {
-        console.log(`✅  Ready on port http://localhost:${this.port}`);
-        resolve(this.serverConnection?.address());
-      });
-    });
-  };
-
-  public initServerWithDB = async () => {
-    await Promise.all([App.initDB(), this.initWebServer()]);
-  };
-
-  public stopWebServer = async () => {
-    return new Promise(resolve => {
-      this.serverConnection?.close(() => {
-        resolve(void 0);
-      });
-    });
-  };
-
-  public getServer = () => {
-    return this.app;
-  };
-
-  public get getControllers() {
-    return this.controllers;
-  }
-}
+server.listen(port, () => {
+  console.log(`Example app listening on port ${port}!`);
+});

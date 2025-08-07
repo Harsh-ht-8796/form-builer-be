@@ -26,7 +26,8 @@ export default class App {
   private serverConnection: http.Server | undefined;
   constructor(controllers: Function[]) {
     this.app = express();
-    this.port = PORT || 8080;
+    logger.info(`✅  Ready on port http://localhost:${PORT}`);
+    this.port = '10000';
     this.controllers = controllers;
     this.initSentry();
     this.initMiddlewares();

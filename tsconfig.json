@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "baseUrl": "src",
+    "paths": {
+      "@app": ["app"],
+      "@config": ["config"],
+      "@decorators": ["decorators"],
+      "@middlewares/*": ["middlewares/*"],
+      "@models/*": ["models/*"],
+      "@common/*": ["common/*"],
+      "@exceptions/*": ["exceptions/*"],
+      "@v1/*": ["api/v1/*"],
+      "@utils/*": ["utils/*"],
+      "@services/*": ["services/*"],
+      "@__tests__/*": ["__tests__/*"]
+    }
+  }
+}

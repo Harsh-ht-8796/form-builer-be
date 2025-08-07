@@ -15,3 +15,4 @@ var TokenTypes;
     TokenTypes["REFRESH"] = "refresh";
     TokenTypes["RESET_PASSWORD"] = "resetPassword";
 })(TokenTypes || (exports.TokenTypes = TokenTypes = {}));
+//# sourceMappingURL=index.js.map

@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const class_validator_1 = require("class-validator");
-const roles_1 = require("@common/types/roles");
+const roles_1 = require("../../../../common/types/roles");
 class RegisterDto {
 }
 exports.default = RegisterDto;
@@ -38,3 +38,4 @@ __decorate([
     (0, class_validator_1.IsEnum)(roles_1.UserRole, { each: true }),
     __metadata("design:type", Array)
 ], RegisterDto.prototype, "roles", void 0);
+//# sourceMappingURL=register.dto.js.map

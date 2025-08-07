@@ -44,15 +44,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -60,9 +51,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
-const validation_middleware_1 = __importDefault(require("@middlewares/validation.middleware"));
-const users_model_1 = require("@models/users.model");
-const v1_1 = require("@services/v1");
+const validation_middleware_1 = __importDefault(require("../../../middlewares/validation.middleware"));
+const users_model_1 = require("../../../models/users.model");
+const v1_1 = require("../../../services/v1");
 const forgotPassword_dto_1 = __importDefault(require("./dtos/forgotPassword.dto"));
 const login_dto_1 = __importStar(require("./dtos/login.dto"));
 const logout_dto_1 = __importDefault(require("./dtos/logout.dto"));
@@ -75,44 +66,32 @@ let AuthController = class AuthController {
         this.userService = new v1_1.UserService();
         this.authService = new v1_1.AuthService();
     }
-    register(userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const user = yield this.userService.createUser(userData);
-            const tokens = yield this.tokenService.generateAuthTokens(user);
-            return { user, tokens };
-        });
+    async register(userData) {
+        const user = await this.userService.createUser(userData);
+        const tokens = await this.tokenService.generateAuthTokens(user);
+        return { user, tokens };
     }
-    login(userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const user = yield this.authService.loginUserWithEmailAndPassword(userData.email, userData.password);
-            const tokens = yield this.tokenService.generateAuthTokens(user);
-            return { user, tokens };
-        });
+    async login(userData) {
+        const user = await this.authService.loginUserWithEmailAndPassword(userData.email, userData.password);
+        const tokens = await this.tokenService.generateAuthTokens(user);
+        return { user, tokens };
     }
-    logout(userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.authService.logout(userData.refreshToken);
-            return { message: 'logout success' };
-        });
+    async logout(userData) {
+        await this.authService.logout(userData.refreshToken);
+        return { message: 'logout success' };
     }
-    refreshToken(userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = yield this.authService.refreshAuth(userData.refreshToken);
-            return Object.assign({}, result);
-        });
+    async refreshToken(userData) {
+        const result = await this.authService.refreshAuth(userData.refreshToken);
+        return Object.assign({}, result);
     }
-    forgotPassword(userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const token = yield this.tokenService.generateResetPasswordToken(userData.email);
-            // should use email service to send the token to email owner, not return it!
-            return { token };
-        });
+    async forgotPassword(userData) {
+        const token = await this.tokenService.generateResetPasswordToken(userData.email);
+        // should use email service to send the token to email owner, not return it!
+        return { token };
     }
-    resetPassword(userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.authService.resetPassword(userData.token, userData.password);
-            return { message: 'password successfully updated' };
-        });
+    async resetPassword(userData) {
+        await this.authService.resetPassword(userData.token, userData.password);
+        return { message: 'password successfully updated' };
     }
 };
 exports.AuthController = AuthController;
@@ -178,3 +157,4 @@ __decorate([
 exports.AuthController = AuthController = __decorate([
     (0, routing_controllers_1.JsonController)('/v1/auth', { transformResponse: false })
 ], AuthController);
+//# sourceMappingURL=auth.controller.js.map

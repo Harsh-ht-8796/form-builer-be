@@ -9,3 +9,4 @@ class HttpException extends routing_controllers_1.HttpError {
     }
 }
 exports.default = HttpException;
+//# sourceMappingURL=HttpException.js.map

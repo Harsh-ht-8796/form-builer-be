@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireUser = exports.requireTeamMember = exports.requireOrgAdmin = exports.requireSuperAdmin = exports.checkRole = void 0;
 const routing_controllers_1 = require("routing-controllers");
-const roles_1 = require("@common/types/roles");
+const roles_1 = require("../common/types/roles");
 const checkRole = (requiredRoles, options = { requireAll: false, allowAdmins: true }) => {
     return (req, res, next) => {
         const user = req.user;
@@ -42,3 +42,4 @@ exports.requireSuperAdmin = (0, exports.checkRole)([roles_1.UserRole.SUPER_ADMIN
 exports.requireOrgAdmin = (0, exports.checkRole)([roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.SUPER_ADMIN], { allowAdmins: false });
 exports.requireTeamMember = (0, exports.checkRole)([roles_1.UserRole.TEAM_MEMBER, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.SUPER_ADMIN], { allowAdmins: false });
 exports.requireUser = (0, exports.checkRole)([roles_1.UserRole.USER, roles_1.UserRole.TEAM_MEMBER, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.SUPER_ADMIN], { allowAdmins: false });
+//# sourceMappingURL=roles.middleware.js.map

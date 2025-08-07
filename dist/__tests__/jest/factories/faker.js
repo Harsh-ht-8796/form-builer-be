@@ -14,3 +14,4 @@ class faker {
     }
 }
 exports.fakerData = new faker();
+//# sourceMappingURL=faker.js.map

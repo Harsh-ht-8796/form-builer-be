@@ -19,3 +19,4 @@ const hasPermission = (userRole, requiredRole) => {
     return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
 };
 exports.hasPermission = hasPermission;
+//# sourceMappingURL=roles.js.map

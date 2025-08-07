@@ -11,57 +11,40 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
-const _decorators_1 = require("@decorators");
+const _decorators_1 = require("../../../decorators");
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
-const roles_1 = require("@common/types/roles");
-const auth_middleware_1 = __importDefault(require("@middlewares/auth.middleware"));
-const users_model_1 = require("@models/users.model");
-const v1_1 = require("@services/v1");
+const roles_1 = require("../../../common/types/roles");
+const auth_middleware_1 = __importDefault(require("../../../middlewares/auth.middleware"));
+const users_model_1 = require("../../../models/users.model");
+const v1_1 = require("../../../services/v1");
 let UserController = class UserController {
     constructor() {
         this.userService = new v1_1.UserService();
     }
-    getAllUsers() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const users = yield this.userService.findAll();
-            return { users };
-        });
+    async getAllUsers() {
+        const users = await this.userService.findAll();
+        return { users };
     }
     getCurrentUser(user) {
         return { user };
     }
-    getAdmins() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const admins = yield this.userService.findByRoles([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN]);
-            return { admins };
-        });
+    async getAdmins() {
+        const admins = await this.userService.findByRoles([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN]);
+        return { admins };
     }
-    getTeamMembers() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const teamMembers = yield this.userService.findByRoles([roles_1.UserRole.TEAM_MEMBER]);
-            return { teamMembers };
-        });
+    async getTeamMembers() {
+        const teamMembers = await this.userService.findByRoles([roles_1.UserRole.TEAM_MEMBER]);
+        return { teamMembers };
     }
-    getRegularUsers() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const regularUsers = yield this.userService.findByRoles([roles_1.UserRole.USER]);
-            return { users: regularUsers };
-        });
+    async getRegularUsers() {
+        const regularUsers = await this.userService.findByRoles([roles_1.UserRole.USER]);
+        return { users: regularUsers };
     }
 };
 exports.UserController = UserController;
@@ -135,3 +118,4 @@ exports.UserController = UserController = __decorate([
     (0, routing_controllers_1.UseBefore)((0, auth_middleware_1.default)()),
     (0, routing_controllers_1.JsonController)('/v1/users', { transformResponse: false })
 ], UserController);
+//# sourceMappingURL=user.controller.js.map

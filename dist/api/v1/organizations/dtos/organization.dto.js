@@ -61,3 +61,4 @@ exports.OrganizationResponseSchema = {
         description: 'Organization created successfully',
     },
 };
+//# sourceMappingURL=organization.dto.js.map

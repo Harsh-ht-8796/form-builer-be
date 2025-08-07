@@ -7,8 +7,9 @@ const express_1 = __importDefault(require("express"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 app.get('/', (_req, res) => {
-    res.send('Hello from TypeScript + Render!');
+    res.send('Hello from TypeScript + Render1!');
 });
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+//# sourceMappingURL=index.js.map

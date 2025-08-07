@@ -21,3 +21,4 @@ __decorate([
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], ITimesStamp.prototype, "updatedAt", void 0);
+//# sourceMappingURL=timestamp.interface.js.map

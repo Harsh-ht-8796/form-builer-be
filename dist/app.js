@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -27,13 +18,13 @@ const routing_controllers_1 = require("routing-controllers");
 const express_xss_sanitizer_1 = require("express-xss-sanitizer");
 const handlingErrors_middleware_1 = __importDefault(require("./middlewares/handlingErrors.middleware"));
 const routingControllersUtils_1 = require("./utils/routingControllersUtils");
-const logger_1 = __importDefault(require("@utils/logger"));
+const logger_1 = __importDefault(require("./utils/logger"));
 const morgan_1 = __importDefault(require("morgan"));
 const path_1 = __importDefault(require("path"));
 class App {
     constructor(controllers) {
         this.controllers = [];
-        this.initWebServer = () => __awaiter(this, void 0, void 0, function* () {
+        this.initWebServer = async () => {
             return new Promise(resolve => {
                 this.serverConnection = this.app.listen(this.port, () => {
                     var _a;
@@ -41,18 +32,18 @@ class App {
                     resolve((_a = this.serverConnection) === null || _a === void 0 ? void 0 : _a.address());
                 });
             });
-        });
-        this.initServerWithDB = () => __awaiter(this, void 0, void 0, function* () {
-            yield Promise.all([App.initDB(), this.initWebServer()]);
-        });
-        this.stopWebServer = () => __awaiter(this, void 0, void 0, function* () {
+        };
+        this.initServerWithDB = async () => {
+            await Promise.all([App.initDB(), this.initWebServer()]);
+        };
+        this.stopWebServer = async () => {
             return new Promise(resolve => {
                 var _a;
                 (_a = this.serverConnection) === null || _a === void 0 ? void 0 : _a.close(() => {
                     resolve(void 0);
                 });
             });
-        });
+        };
         this.getServer = () => {
             return this.app;
         };
@@ -109,18 +100,15 @@ class App {
         // }
         this.app.use(handlingErrors_middleware_1.default);
     }
-    static initDB() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield mongoose_1.default.connect(`${config_1.MONGO_URI}/${config_1.DATABASE}`);
-        });
+    static async initDB() {
+        await mongoose_1.default.connect(`${config_1.MONGO_URI}/${config_1.DATABASE}`);
     }
-    static closeDB() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield mongoose_1.default.disconnect();
-        });
+    static async closeDB() {
+        await mongoose_1.default.disconnect();
     }
     get getControllers() {
         return this.controllers;
     }
 }
 exports.default = App;
+//# sourceMappingURL=app.js.map

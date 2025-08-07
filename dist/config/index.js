@@ -49,3 +49,4 @@ exports.jwt = {
     resetPasswordExpireFormat: checkEnv('JWT_RESET_PASSWORD_EXPIRE_FORMAT'),
 };
 __exportStar(require("./passport"), exports);
+//# sourceMappingURL=index.js.map

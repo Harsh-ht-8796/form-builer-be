@@ -48,9 +48,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.IToken = void 0;
 const class_validator_1 = require("class-validator");
 const mongoose_1 = __importStar(require("mongoose"));
-const constants_1 = require("@common/constants");
-const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
-const toJSON_plugin_1 = __importDefault(require("@utils/toJSON.plugin"));
+const constants_1 = require("../common/constants");
+const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
+const toJSON_plugin_1 = __importDefault(require("../utils/toJSON.plugin"));
 class IToken extends timestamp_interface_1.default {
 }
 exports.IToken = IToken;
@@ -103,3 +103,4 @@ const tokenSchema = new mongoose_1.Schema({
 });
 tokenSchema.plugin(toJSON_plugin_1.default);
 exports.default = mongoose_1.default.model(constants_1.MODELS.TOKENS, tokenSchema);
+//# sourceMappingURL=tokens.model.js.map

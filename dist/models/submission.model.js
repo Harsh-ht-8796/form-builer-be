@@ -8,15 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -24,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ISubmission = void 0;
 const mongoose_1 = require("mongoose");
 const class_validator_1 = require("class-validator");
-const constants_1 = require("@common/constants");
-const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
+const constants_1 = require("../common/constants");
+const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
 const form_model_1 = __importDefault(require("./form.model"));
 // Class with validation decorators
 class ISubmission extends timestamp_interface_1.default {
@@ -64,39 +55,36 @@ const submissionSchema = new mongoose_1.Schema({
     timestamps: true,
 });
 // Pre-save hook to validate formId
-submissionSchema.pre('save', function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            if (this.formId) {
-                const formExists = yield form_model_1.default.exists({ _id: this.formId });
-                if (!formExists) {
-                    throw new Error('Invalid formId: Form does not exist');
-                }
+submissionSchema.pre('save', async function (next) {
+    try {
+        if (this.formId) {
+            const formExists = await form_model_1.default.exists({ _id: this.formId });
+            if (!formExists) {
+                throw new Error('Invalid formId: Form does not exist');
             }
-            next();
         }
-        catch (error) {
-            next(error);
-        }
-    });
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 });
 // Pre-update hooks to validate formId when updating
-submissionSchema.pre(['updateOne', 'findOneAndUpdate'], function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const update = this.getUpdate();
-            if (update.formId) {
-                const formExists = yield form_model_1.default.exists({ _id: update.formId });
-                if (!formExists) {
-                    throw new Error('Invalid formId: Form does not exist');
-                }
+submissionSchema.pre(['updateOne', 'findOneAndUpdate'], async function (next) {
+    try {
+        const update = this.getUpdate();
+        if (update.formId) {
+            const formExists = await form_model_1.default.exists({ _id: update.formId });
+            if (!formExists) {
+                throw new Error('Invalid formId: Form does not exist');
             }
-            next();
         }
-        catch (error) {
-            next(error);
-        }
-    });
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 });
 // Export Mongoose model
 exports.default = (0, mongoose_1.model)(constants_1.MODELS.SUBMISSIONS, submissionSchema);
+//# sourceMappingURL=submission.model.js.map

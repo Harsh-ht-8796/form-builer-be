@@ -12,3 +12,4 @@ const handlingErrors = (error, req, res, next) => {
     }
 };
 exports.default = handlingErrors;
+//# sourceMappingURL=handlingErrors.middleware.js.map

@@ -37,3 +37,4 @@ const toJSON = schema => {
     });
 };
 exports.default = toJSON;
+//# sourceMappingURL=toJSON.plugin.js.map

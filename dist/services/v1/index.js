@@ -20,3 +20,4 @@ __exportStar(require("./organization.service"), exports);
 __exportStar(require("./token.service"), exports);
 __exportStar(require("./user.service"), exports);
 __exportStar(require("./submission.service"), exports);
+//# sourceMappingURL=index.js.map

@@ -6,3 +6,4 @@ const config = {
     Database: 'express_typescript_boilerplate_test',
 };
 exports.default = config;
+//# sourceMappingURL=config.js.map

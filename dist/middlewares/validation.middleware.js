@@ -39,3 +39,4 @@ const validationMiddleware = (type, value = 'body', skipMissingProperties = fals
     };
 };
 exports.default = validationMiddleware;
+//# sourceMappingURL=validation.middleware.js.map

@@ -8,24 +8,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IForm = exports.IFormField = exports.IFormSettings = void 0;
 const mongoose_1 = require("mongoose");
-const constants_1 = require("@common/constants");
+const constants_1 = require("../common/constants");
 const organization_model_1 = __importDefault(require("./organization.model"));
-const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
+const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class IFormSettings {
@@ -206,38 +197,35 @@ const formSchema = new mongoose_1.Schema({
     timestamps: true,
 });
 // Pre-save hook to validate orgId
-formSchema.pre('save', function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            if (this.orgId) {
-                const orgExists = yield organization_model_1.default.exists({ _id: this.orgId });
-                if (!orgExists) {
-                    throw new Error('Invalid orgId: Organization does not exist');
-                }
+formSchema.pre('save', async function (next) {
+    try {
+        if (this.orgId) {
+            const orgExists = await organization_model_1.default.exists({ _id: this.orgId });
+            if (!orgExists) {
+                throw new Error('Invalid orgId: Organization does not exist');
             }
-            next();
         }
-        catch (error) {
-            next(error);
-        }
-    });
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 });
 // Pre-update hook to validate orgId for update operations
-formSchema.pre(['updateOne', 'findOneAndUpdate'], function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const update = this.getUpdate();
-            if (update.orgId) {
-                const orgExists = yield organization_model_1.default.exists({ _id: update.orgId });
-                if (!orgExists) {
-                    throw new Error('Invalid orgId: Organization does not exist');
-                }
+formSchema.pre(['updateOne', 'findOneAndUpdate'], async function (next) {
+    try {
+        const update = this.getUpdate();
+        if (update.orgId) {
+            const orgExists = await organization_model_1.default.exists({ _id: update.orgId });
+            if (!orgExists) {
+                throw new Error('Invalid orgId: Organization does not exist');
             }
-            next();
         }
-        catch (error) {
-            next(error);
-        }
-    });
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 });
 exports.default = (0, mongoose_1.model)(constants_1.MODELS.FORMS, formSchema);
+//# sourceMappingURL=form.model.js.map

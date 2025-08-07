@@ -22,3 +22,4 @@ __decorate([
     (0, class_validator_1.MinLength)(6),
     __metadata("design:type", String)
 ], ResetPasswordDto.prototype, "password", void 0);
+//# sourceMappingURL=resetPassword.dto.js.map

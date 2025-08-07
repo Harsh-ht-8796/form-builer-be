@@ -15,9 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.IOrganization = void 0;
 const class_validator_1 = require("class-validator");
 const mongoose_1 = require("mongoose");
-const constants_1 = require("@common/constants");
-const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
-const toJSON_plugin_1 = __importDefault(require("@utils/toJSON.plugin"));
+const constants_1 = require("../common/constants");
+const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
+const toJSON_plugin_1 = __importDefault(require("../utils/toJSON.plugin"));
 class IOrganization extends timestamp_interface_1.default {
 }
 exports.IOrganization = IOrganization;
@@ -44,3 +44,4 @@ const organizationSchema = new mongoose_1.Schema({
 });
 organizationSchema.plugin(toJSON_plugin_1.default);
 exports.default = (0, mongoose_1.model)(constants_1.MODELS.ORGANIZATIONS, organizationSchema);
+//# sourceMappingURL=organization.model.js.map

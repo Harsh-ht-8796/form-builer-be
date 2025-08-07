@@ -58,3 +58,4 @@ const parseJsonFieldsMiddleware = (fieldsToParse) => (req, res, next) => {
     }
 };
 exports.parseJsonFieldsMiddleware = parseJsonFieldsMiddleware;
+//# sourceMappingURL=parseJsonFields.middleware.js.map

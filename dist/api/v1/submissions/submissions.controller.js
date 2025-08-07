@@ -11,93 +11,76 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubmissionController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
-const index_1 = require("@middlewares/index");
-const v1_1 = require("@services/v1");
-const submission_service_1 = require("@services/v1/submission.service");
-const submission_model_1 = require("@models/submission.model");
+const index_1 = require("../../../middlewares/index");
+const v1_1 = require("../../../services/v1");
+const submission_service_1 = require("../../../services/v1/submission.service");
+const submission_model_1 = require("../../../models/submission.model");
 const sumission_dto_1 = require("./dto/sumission.dto");
 let SubmissionController = class SubmissionController {
     constructor() {
         this.submissionService = new submission_service_1.SubmissionService();
         this.formService = new v1_1.FormService();
     }
-    submitForm(formId, submissionData, user, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c, _d;
-            try {
-                console.log('Submitting form with ID:', formId, 'and data:', submissionData);
-                const submissionPayload = Object.assign(Object.assign(Object.assign({}, submissionData), { formId }), (user && user._id ? { submittedBy: user._id } : {}));
-                const submission = yield this.submissionService.create(submissionPayload);
-                const form = yield this.formService.getById(formId);
-                if (!form) {
-                    throw new Error('Form not found');
+    async submitForm(formId, submissionData, user, next) {
+        var _a, _b, _c, _d;
+        try {
+            console.log('Submitting form with ID:', formId, 'and data:', submissionData);
+            const submissionPayload = Object.assign(Object.assign(Object.assign({}, submissionData), { formId }), (user && user._id ? { submittedBy: user._id } : {}));
+            const submission = await this.submissionService.create(submissionPayload);
+            const form = await this.formService.getById(formId);
+            if (!form) {
+                throw new Error('Form not found');
+            }
+            if ((form === null || form === void 0 ? void 0 : form.settings) && ((_a = form === null || form === void 0 ? void 0 : form.settings) === null || _a === void 0 ? void 0 : _a.emailNotifications) && ((_c = (_b = form === null || form === void 0 ? void 0 : form.settings) === null || _b === void 0 ? void 0 : _b.emailNotifications) === null || _c === void 0 ? void 0 : _c.length) > 0) {
+                const emailData = {
+                    to: (_d = form === null || form === void 0 ? void 0 : form.settings) === null || _d === void 0 ? void 0 : _d.emailNotifications,
+                    subject: `New submission for form ${form._id}`,
+                    body: JSON.stringify(submission.data),
+                };
+                try {
+                    await fetch(process.env.NODE_RED_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(emailData),
+                    });
                 }
-                if ((form === null || form === void 0 ? void 0 : form.settings) && ((_a = form === null || form === void 0 ? void 0 : form.settings) === null || _a === void 0 ? void 0 : _a.emailNotifications) && ((_c = (_b = form === null || form === void 0 ? void 0 : form.settings) === null || _b === void 0 ? void 0 : _b.emailNotifications) === null || _c === void 0 ? void 0 : _c.length) > 0) {
-                    const emailData = {
-                        to: (_d = form === null || form === void 0 ? void 0 : form.settings) === null || _d === void 0 ? void 0 : _d.emailNotifications,
-                        subject: `New submission for form ${form._id}`,
-                        body: JSON.stringify(submission.data),
-                    };
-                    try {
-                        yield fetch(process.env.NODE_RED_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(emailData),
-                        });
-                    }
-                    catch (error) {
-                        console.error('Error sending email notification:', error);
-                    }
+                catch (error) {
+                    console.error('Error sending email notification:', error);
                 }
-                return submission;
             }
-            catch (err) {
-                next(err);
-            }
-        });
+            return submission;
+        }
+        catch (err) {
+            next(err);
+        }
     }
-    getSubmissionSummary(accessibility) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const summary = yield this.submissionService.getSubmissionSummary(accessibility);
-                return { summary };
-            }
-            catch (err) {
-                throw new Error('Error fetching submission summary');
-            }
-        });
+    async getSubmissionSummary(accessibility) {
+        try {
+            const summary = await this.submissionService.getSubmissionSummary(accessibility);
+            return { summary };
+        }
+        catch (err) {
+            throw new Error('Error fetching submission summary');
+        }
     }
-    getSubmissions(formId, limit, skip) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.submissionService.findSubmissionsByFormId(formId, { limit, page: skip });
-        });
+    async getSubmissions(formId, limit, skip) {
+        return this.submissionService.findSubmissionsByFormId(formId, { limit, page: skip });
     }
-    getSubmission(id, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const submission = yield this.submissionService.getById(id);
-                if (!submission) {
-                    throw new Error('Submission not found');
-                }
-                return submission;
+    async getSubmission(id, next) {
+        try {
+            const submission = await this.submissionService.getById(id);
+            if (!submission) {
+                throw new Error('Submission not found');
             }
-            catch (err) {
-                next(err);
-            }
-        });
+            return submission;
+        }
+        catch (err) {
+            next(err);
+        }
     }
 };
 exports.SubmissionController = SubmissionController;
@@ -150,3 +133,4 @@ __decorate([
 exports.SubmissionController = SubmissionController = __decorate([
     (0, routing_controllers_1.JsonController)('/v1/submissions', { transformResponse: false })
 ], SubmissionController);
+//# sourceMappingURL=submissions.controller.js.map

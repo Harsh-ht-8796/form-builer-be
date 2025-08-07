@@ -37,3 +37,4 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], FormSearchDto.prototype, "toDate", void 0);
+//# sourceMappingURL=form-search.dto.js.map

@@ -18,3 +18,4 @@ __decorate([
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], ForgotPasswordDto.prototype, "email", void 0);
+//# sourceMappingURL=forgotPassword.dto.js.map

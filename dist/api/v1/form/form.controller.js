@@ -44,15 +44,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __rest = (this && this.__rest) || function (s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -72,113 +63,97 @@ exports.FormController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
 const crypto_1 = __importDefault(require("crypto"));
-const roles_1 = require("@common/types/roles");
-const index_1 = require("@middlewares/index");
-const form_model_1 = __importStar(require("@models/form.model"));
-const v1_1 = require("@services/v1");
+const roles_1 = require("../../../common/types/roles");
+const index_1 = require("../../../middlewares/index");
+const form_model_1 = __importStar(require("../../../models/form.model"));
+const v1_1 = require("../../../services/v1");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const form_dto_1 = __importStar(require("./dtos/form.dto"));
 const form_search_dto_1 = __importDefault(require("./dtos/form-search.dto"));
 const multer_1 = __importDefault(require("./multer"));
-const is_form_exists_1 = __importDefault(require("@middlewares/is.form.exists"));
+const is_form_exists_1 = __importDefault(require("../../../middlewares/is.form.exists"));
 const file_type_1 = require("file-type");
 let FormController = class FormController {
     constructor() {
         this.formService = new v1_1.FormService();
     }
-    create(formData, user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const createdBy = (_a = user === null || user === void 0 ? void 0 : user._id) === null || _a === void 0 ? void 0 : _a.toString(); // Assuming user is attached to the request
-            const orgId = user === null || user === void 0 ? void 0 : user.orgId; // Assuming user is attached to the request
-            console.log(orgId);
-            const form = yield this.formService.create(Object.assign(Object.assign(Object.assign({}, formData), { createdBy }), (orgId && orgId ? { orgId: orgId } : {})));
-            return form;
-        });
+    async create(formData, user) {
+        var _a;
+        const createdBy = (_a = user === null || user === void 0 ? void 0 : user._id) === null || _a === void 0 ? void 0 : _a.toString(); // Assuming user is attached to the request
+        const orgId = user === null || user === void 0 ? void 0 : user.orgId; // Assuming user is attached to the request
+        console.log(orgId);
+        const form = await this.formService.create(Object.assign(Object.assign(Object.assign({}, formData), { createdBy }), (orgId && orgId ? { orgId: orgId } : {})));
+        return form;
     }
-    getAll() {
-        return __awaiter(this, arguments, void 0, function* (limit = 10, page = 0) {
-            const { docs, meta } = yield this.formService.findAll({}, limit, page);
-            return { docs, meta };
-        });
+    async getAll(limit = 10, page = 0) {
+        const { docs, meta } = await this.formService.findAll({}, limit, page);
+        return { docs, meta };
     }
-    search(query) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { limit = 10, page = 0 } = query, rest = __rest(query, ["limit", "page"]);
-            console.log('Search query:', rest);
-            const { docs, meta } = yield this.formService.findAll(rest, limit, page);
-            return { docs, meta };
-        });
+    async search(query) {
+        const { limit = 10, page = 0 } = query, rest = __rest(query, ["limit", "page"]);
+        console.log('Search query:', rest);
+        const { docs, meta } = await this.formService.findAll(rest, limit, page);
+        return { docs, meta };
     }
-    get(id, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const form = yield this.formService.getById(id);
-                if (!form) {
-                    throw new Error('Form not found');
-                }
-                return form;
-            }
-            catch (err) {
-                next(err);
-            }
-        });
-    }
-    update(id, formData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const form = yield this.formService.update(id, formData);
+    async get(id, next) {
+        try {
+            const form = await this.formService.getById(id);
             if (!form) {
                 throw new Error('Form not found');
             }
             return form;
-        });
+        }
+        catch (err) {
+            next(err);
+        }
     }
-    delete(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const form = yield this.formService.delete(id);
-            if (!form) {
-                throw new Error('Form not found');
-            }
-            return form;
-        });
+    async update(id, formData) {
+        const form = await this.formService.update(id, formData);
+        if (!form) {
+            throw new Error('Form not found');
+        }
+        return form;
     }
-    uploadImages(user, id, req) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const files = req.files;
-            if (!files || Object.keys(files).length === 0) {
-                throw new routing_controllers_1.BadRequestError('No images uploaded');
-            }
-            const result = {};
-            for (const key of Object.keys(files)) {
-                const arr = files[key];
-                if (!arr || arr.length === 0)
-                    continue;
-                const file = arr[0];
-                const fullPath = path_1.default.join(file.destination, file.filename);
-                const buffer = fs_1.default.readFileSync(fullPath);
-                const type = yield (0, file_type_1.fileTypeFromBuffer)(buffer);
-                if (!type || !['image/jpeg', 'image/png', 'image/gif'].includes(type.mime)) {
-                    fs_1.default.unlinkSync(fullPath);
-                    throw new routing_controllers_1.BadRequestError(`${key} has invalid content`);
-                }
-                const hash = crypto_1.default.createHash('sha256').update(buffer).digest('hex');
-                result[`${key}Url`] = `/uploads/${file.filename}`;
-                const updatedForm = yield form_model_1.default.updateOne({ _id: id }, { [`${key}`]: `/uploads/${file.filename}` });
-                console.log({ updatedForm });
-                result[`${key}Hash`] = hash;
-            }
-            return result;
-        });
+    async delete(id) {
+        const form = await this.formService.delete(id);
+        if (!form) {
+            throw new Error('Form not found');
+        }
+        return form;
     }
-    publish(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const form = yield this.formService.publish(id);
-            if (!form) {
-                throw new Error('Form not found');
+    async uploadImages(user, id, req) {
+        const files = req.files;
+        if (!files || Object.keys(files).length === 0) {
+            throw new routing_controllers_1.BadRequestError('No images uploaded');
+        }
+        const result = {};
+        for (const key of Object.keys(files)) {
+            const arr = files[key];
+            if (!arr || arr.length === 0)
+                continue;
+            const file = arr[0];
+            const fullPath = path_1.default.join(file.destination, file.filename);
+            const buffer = fs_1.default.readFileSync(fullPath);
+            const type = await (0, file_type_1.fileTypeFromBuffer)(buffer);
+            if (!type || !['image/jpeg', 'image/png', 'image/gif'].includes(type.mime)) {
+                fs_1.default.unlinkSync(fullPath);
+                throw new routing_controllers_1.BadRequestError(`${key} has invalid content`);
             }
-            return form;
-        });
+            const hash = crypto_1.default.createHash('sha256').update(buffer).digest('hex');
+            result[`${key}Url`] = `/uploads/${file.filename}`;
+            const updatedForm = await form_model_1.default.updateOne({ _id: id }, { [`${key}`]: `/uploads/${file.filename}` });
+            console.log({ updatedForm });
+            result[`${key}Hash`] = hash;
+        }
+        return result;
+    }
+    async publish(id) {
+        const form = await this.formService.publish(id);
+        if (!form) {
+            throw new Error('Form not found');
+        }
+        return form;
     }
 };
 exports.FormController = FormController;
@@ -285,3 +260,4 @@ __decorate([
 exports.FormController = FormController = __decorate([
     (0, routing_controllers_1.JsonController)('/v1/forms', { transformResponse: false })
 ], FormController);
+//# sourceMappingURL=form.controller.js.map

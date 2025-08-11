@@ -22,7 +22,7 @@ export class AuthController {
   @HttpCode(201)
   @OpenAPI({ summary: 'register new user' })
   @ResponseSchema(IUser)
-  @UseBefore(validationMiddleware(RegisterDto, 'body'))
+  //@UseBefore(validationMiddleware(RegisterDto, 'body'))
   async register(@Body() userData: RegisterDto) {
     const user = await this.userService.createUser(userData);
     const tokens = await this.tokenService.generateAuthTokens(user);
@@ -35,7 +35,7 @@ export class AuthController {
     description: 'user data and tokens',
     responses: LoginResponseSchema,
   })
-  @UseBefore(validationMiddleware(LoginDto, 'body'))
+  //@UseBefore(validationMiddleware(LoginDto, 'body'))
   async login(@Body() userData: LoginDto) {
     const user = await this.authService.loginUserWithEmailAndPassword(userData.email, userData.password);
     const tokens = await this.tokenService.generateAuthTokens(user);
@@ -45,7 +45,7 @@ export class AuthController {
 
   @Post('/logout')
   @OpenAPI({ summary: 'logout the user' })
-  @UseBefore(validationMiddleware(LogoutDto, 'body'))
+  //@UseBefore(validationMiddleware(LogoutDto, 'body'))
   async logout(@Body() userData: LogoutDto) {
     await this.authService.logout(userData.refreshToken);
 
@@ -54,7 +54,7 @@ export class AuthController {
 
   @Post('/refresh-tokens')
   @OpenAPI({ description: 'renew user token and refresh token', responses: LoginResponseSchema })
-  @UseBefore(validationMiddleware(RefreshTokenDto, 'body'))
+  //@UseBefore(validationMiddleware(RefreshTokenDto, 'body'))
   async refreshToken(@Body() userData: RefreshTokenDto) {
     const result = await this.authService.refreshAuth(userData.refreshToken);
 
@@ -63,7 +63,7 @@ export class AuthController {
 
   @Post('/forgot-password')
   @OpenAPI({ summary: 'send reset token to reset the password' })
-  @UseBefore(validationMiddleware(ForgotPasswordDto, 'body'))
+  //@UseBefore(validationMiddleware(ForgotPasswordDto, 'body'))
   async forgotPassword(@Body() userData: ForgotPasswordDto) {
     const token = await this.tokenService.generateResetPasswordToken(userData.email);
 
@@ -73,7 +73,7 @@ export class AuthController {
 
   @Post('/reset-password')
   @OpenAPI({ summary: 'reset user password' })
-  @UseBefore(validationMiddleware(ResetPasswordDto, 'body'))
+  //@UseBefore(validationMiddleware(ResetPasswordDto, 'body'))
   async resetPassword(@Body() userData: ResetPasswordDto) {
     await this.authService.resetPassword(userData.token, userData.password);
 

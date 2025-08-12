@@ -11,7 +11,8 @@ export default class FormSearchDto {
     page!: number;
 
     @IsEnum(['draft', 'published'])
-    status!: 'draft' | 'published';
+    @IsOptional()
+    status?: 'draft' | 'published';
 
     @IsString()
     @IsOptional()
@@ -20,5 +21,9 @@ export default class FormSearchDto {
     @IsString()
     @IsOptional()
     toDate?: string;
+
+    @IsString()
+    @IsOptional()
+    mode?: string;
 
 }

@@ -24,7 +24,7 @@ export class FormController {
   @HttpCode(201)
   @OpenAPI({ summary: 'Create a new form', responses: FormResponseSchema })
   @ResponseSchema(IForm)
-  @UseBefore(validationMiddleware(FormDto, 'body'))
+  //@UseBefore(validationMiddleware(FormDto, 'body'))
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
   async create(@Body() formData: FormDto, @CurrentUser() user: IUserSchema) {
@@ -35,13 +35,15 @@ export class FormController {
     return form;
   }
 
+
+
   @Get('/')
   @OpenAPI({ summary: 'Get all forms', responses: FormResponseSchema })
   @ResponseSchema(IForm)
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole])
   async getAll(@QueryParam('limit') limit: number = 10, @QueryParam('page') page: number = 0) {
-    const { docs, meta } = await this.formService.findAll({}, limit, page);
+    const { docs, meta } = await this.formService.findAll({ limit, page });
     return { docs, meta };
   }
 
@@ -50,10 +52,10 @@ export class FormController {
   @ResponseSchema(IForm)
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
-  async search(@QueryParams() query: FormSearchDto) {
+  async search(@QueryParams() query: FormSearchDto, @CurrentUser() user: IUserSchema) {
     const { limit = 10, page = 0, ...rest } = query;
     console.log('Search query:', rest);
-    const { docs, meta } = await this.formService.findAll(rest, limit, page);
+    const { docs, meta } = await this.formService.findAll({ filter: rest, limit, page, user });
     return { docs, meta };
   }
 
@@ -76,7 +78,7 @@ export class FormController {
   @Put('/:id')
   @OpenAPI({ summary: 'Update an existing form', responses: FormResponseSchema })
   @ResponseSchema(IForm)
-  @UseBefore(validationMiddleware(FormDto, 'body'))
+  // @UseBefore(validationMiddleware(FormDto, 'body'))
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
   async update(@Param('id') id: ObjectId, @Body() formData: Partial<IForm>) {

@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsMongoId, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsEnum, IsMongoId, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
 import { ObjectId } from 'mongoose';
 
 // OpenAPI response schema for form operations
@@ -103,7 +103,7 @@ class SettingsDto {
 export default class FormDto {
 
   @IsArray()
-  @IsOptional()   
+  @IsOptional()
   fields?: FieldDto[];
 
   @IsObject()
@@ -136,9 +136,9 @@ export default class FormDto {
   allowedDomains?: string[];
 
   @IsArray()
-  @IsString({ each: true }) 
+  @IsEmail({}, { each: true })
   @IsOptional()
-  alowedEmails?: string[];
+  allowedEmails?: string[];
 
   @IsString()
   @IsOptional()

@@ -19,8 +19,8 @@ export class SubmissionController {
     @HttpCode(201)
     @OpenAPI({ summary: 'Submit a form', responses: SubmissionResponseSchema })
     @ResponseSchema(ISubmission)
-    @UseBefore(validationMiddleware(SubmissionBodyDto, 'body'))
-    @UseBefore(validationMiddleware(SubmissionParamsDto, 'params'))
+    //@UseBefore(validationMiddleware(SubmissionBodyDto, 'body'))
+    //@UseBefore(validationMiddleware(SubmissionParamsDto, 'params'))
     @UseBefore(conditionalAuth('formId'))
     async submitForm(
         @Param('formId') formId: ObjectId,

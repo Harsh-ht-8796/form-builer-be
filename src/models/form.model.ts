@@ -4,7 +4,7 @@ import { Types } from 'mongoose';
 import { MODELS } from '@common/constants';
 import Organization from './organization.model';
 import ITimesStamp from '@common/interfaces/timestamp.interface';
-import { IsArray, IsBoolean, IsIn, IsMongoId, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsIn, IsMongoId, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 
@@ -58,7 +58,7 @@ export class IFormField {
   order!: number;
 
   @IsBoolean()
-  required! : boolean;
+  required!: boolean;
 }
 
 export class IForm extends ITimesStamp {
@@ -88,6 +88,11 @@ export class IForm extends ITimesStamp {
 
 
   @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  allowedEmails?: string[];
+
+  @IsOptional()
   @IsString()
   coverImageUrl?: string;
 
@@ -102,11 +107,6 @@ export class IForm extends ITimesStamp {
   @IsOptional()
   @IsString()
   logoImage?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  alowedEmails?: string[];
 
   @ValidateNested()
   @Type(() => IFormSettings)
@@ -130,7 +130,7 @@ const formSchema = new Schema({
   title: { type: String, default: '' },
   description: { type: String, default: '' },
   allowedDomains: { type: [String], default: [] },
-  alowedEmails: { type: [String], default: [] },
+  allowedEmails: { type: [String], default: [] },
   fields: [
     {
       id: { type: String, required: true },

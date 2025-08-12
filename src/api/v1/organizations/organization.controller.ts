@@ -20,13 +20,29 @@ export class OrganizationController {
   @HttpCode(201)
   @OpenAPI({ summary: 'Create a new organization', responses: OrganizationResponseSchema })
   @ResponseSchema(IOrganization)
-  @UseBefore(validationMiddleware(OrganizationDto, 'body'))
+  //@UseBefore(validationMiddleware(OrganizationDto, 'body'))
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN])
   async create(@Body() organizationData: OrganizationDto, @CurrentUser() user: IUserSchema) {
     const createdBy = user?._id?.toString();
     const organization = await this.organizationService.create({ ...organizationData, createdBy });
     return organization;
+  }
+
+
+
+  @Post('/map-to-user')
+  @HttpCode(201)
+  @OpenAPI({ summary: 'Create a new organization and mapp to user', responses: OrganizationResponseSchema })
+  @ResponseSchema(IOrganization)
+  //@UseBefore(validationMiddleware(OrganizationDto, 'body'))
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN])
+  async mapTouser(@Body() organizationData: OrganizationDto, @CurrentUser() user: IUserSchema) {
+    const createdBy = user?._id?.toString();
+    const mappedOrgWithUser = await this.organizationService.mapToUser({ ...organizationData, createdBy });
+    console.log({ mappedOrgWithUser });
+    return mappedOrgWithUser;
   }
 
   @Get('/:id')
@@ -47,7 +63,7 @@ export class OrganizationController {
   @Put('/:id')
   @OpenAPI({ summary: 'Update an existing organization', responses: OrganizationResponseSchema })
   @ResponseSchema(IOrganization)
-  @UseBefore(validationMiddleware(OrganizationDto, 'body'))
+  //@UseBefore(validationMiddleware(OrganizationDto, 'body'))
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
   async update(@Param('id') id: ObjectId, @Body() organizationData: Partial<IOrganization>) {

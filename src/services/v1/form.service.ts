@@ -6,6 +6,7 @@ import CRUD from '@common/interfaces/crud.interface';
 import Form, { IForm, IFormSchema } from '@models/form.model';
 import FormDto from '@v1/form/dtos/form.dto';
 import dayjs from 'dayjs';
+import { IUserSchema } from '@models/users.model';
 
 export class FormService implements CRUD<IFormSchema> {
   private readonly formModel = Form;
@@ -14,43 +15,63 @@ export class FormService implements CRUD<IFormSchema> {
     return this.formModel.create(data);
   }
 
-  async findAll(filter: FilterQuery<IFormSchema> = {},
-    limit = 10, page = 0): Promise<{ docs: IFormSchema[]; meta: { totalDocs: number; totalPages: number; page: number } }> {
+  
+
+  async findAll(findParams: {
+    filter?: FilterQuery<IFormSchema>,
+    limit?: number,
+    page?: number,
+    user?: IUserSchema,
+  }): Promise<{ docs: IFormSchema[]; meta: { totalDocs: number; totalPages: number; page: number } }> {
+    console.log({ filter: findParams.user })
 
 
-    if (typeof filter?.title === 'string') {
-      if (filter?.title) {
-        filter.title = { $regex: filter.title, $options: 'i' };
+    if (typeof findParams?.filter?.title === 'string') {
+      if (findParams?.filter?.title) {
+        findParams.filter.title = { $regex: findParams.filter.title, $options: 'i' };
       } else {
-        delete filter.title
+        delete findParams.filter.title
       }
     }
 
-    if (filter?.isActive && typeof filter?.isActive === 'string') {
-      filter.isActive = filter.isActive === 'true' ? true : false;
+    if (findParams?.filter?.isActive && typeof findParams?.filter?.isActive === 'string') {
+      findParams.filter.isActive = findParams.filter.isActive === 'true' ? true : false;
     }
-    if (filter?.fromDate && typeof filter?.fromDate === 'string' && filter?.toDate && typeof filter?.toDate === 'string') {
+    if (findParams?.filter?.fromDate && typeof findParams?.filter?.fromDate === 'string' && findParams?.filter?.toDate && typeof findParams?.filter?.toDate === 'string') {
 
-      const fromParts = filter.fromDate.trim().split('-'); // ['31', '07', '2025']
-      const toParts = filter.toDate.trim().split('-');
+      const fromParts = findParams.filter.fromDate.trim().split('-'); // ['31', '07', '2025']
+      const toParts = findParams.filter.toDate.trim().split('-');
 
       if (fromParts.length === 3 && toParts.length === 3) {
         const fromDate = dayjs(`${fromParts[2]}-${fromParts[1]}-${fromParts[0]}`, 'YYYY-MM-DD').startOf('day');
         const toDate = dayjs(`${toParts[2]}-${toParts[1]}-${toParts[0]}`, 'YYYY-MM-DD').endOf('day');
 
         if (fromDate.isValid() && toDate.isValid()) {
-          filter.createdAt = { $gte: new Date(fromDate.toDate()), $lte: new Date(toDate.toDate()) };
-          delete filter.fromDate;
-          delete filter.toDate;
+          findParams.filter.createdAt = { $gte: new Date(fromDate.toDate()), $lte: new Date(toDate.toDate()) };
+          delete findParams.filter.fromDate;
+          delete findParams.filter.toDate;
         }
       }
     }
 
-    const totalDocs = await this.formModel.countDocuments(filter);
+    if ((findParams?.filter?.mode && typeof findParams?.filter?.mode === 'string') || (findParams?.filter?.status && typeof findParams?.filter?.status === 'string')) {
+      findParams.filter.orgId = findParams.user.orgId
+    }
+
+    if (findParams?.filter?.mode && typeof findParams?.filter?.mode === 'string') {
+      if (findParams.filter.mode === 'sent') {
+        findParams.filter.status = 'published'
+      }
+      delete findParams.filter.mode;
+    }
+
+    console.log({ filter: findParams.filter })
+
+    const totalDocs = await this.formModel.countDocuments(findParams.filter);
     const docs = await this.formModel
-      .find(filter)
-      .limit(limit)
-      .skip(limit * page)
+      .find(findParams.filter)
+      .limit(findParams.limit)
+      .skip(findParams.limit * findParams.page)
       .select({ allowedDomains: 0, allowedEmails: 0 }) // Exclude sensitive fields
       .sort({ createdAt: -1 })
       .lean();
@@ -65,8 +86,8 @@ export class FormService implements CRUD<IFormSchema> {
       docs: modifedData,
       meta: {
         totalDocs,
-        totalPages: Math.ceil(totalDocs / limit) || 0,
-        page,
+        totalPages: Math.ceil(totalDocs / findParams.limit) || 0,
+        page: findParams.page,
       },
     };
   }

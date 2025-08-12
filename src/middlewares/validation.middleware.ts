@@ -21,36 +21,36 @@ const validationMiddleware = (
   whitelist = true,
   forbidNonWhitelisted = true,
 ): RequestHandler => {
+
+  console.log("type======>", type);
+  console.log("value======>", value);
   return (req, res, next) => {
 
-    // const dataToValidate =
-    //   value === 'body' ? req.body :
-    //     value === 'query' ? req.query :
-    //       value === 'params' ? req.params :
-    //         undefined;
-    // 
+    const dataToValidate =
+      value === 'body' ? req.body :
+        value === 'query' ? req.query :
+          value === 'params' ? req.params :
+            undefined;
 
-    // console.log({ dataToValidate })
-    // console.log({ query: req.query })
-    next();
-    // if (!dataToValidate) {
-    //   return next(new HttpException(400, 'Invalid request target'));
-    // }
-    
-    // const obj = plainToInstance(type, dataToValidate);
+    console.log("dataToValidate======>", dataToValidate);
+    if (!dataToValidate) {
+      return next(new HttpException(400, 'Invalid request target'));
+    }
 
-    // validate(obj, {
-    //   skipMissingProperties,
-    //   whitelist,
-    //   forbidNonWhitelisted,
-    // }).then((errors: ValidationError[]) => {
-    //   if (errors.length > 0) {
-    //     const message = errors.map(getAllNestedErrors).join(', ');
-    //     next(new HttpException(400, message));
-    //   } else {
-    //     next();
-    //   }
-    // });
+    const obj = plainToInstance(type, dataToValidate);
+
+    validate(obj, {
+      skipMissingProperties,
+      whitelist,
+      forbidNonWhitelisted,
+    }).then((errors: ValidationError[]) => {
+      if (errors.length > 0) {
+        const message = errors.map(getAllNestedErrors).join(', ');
+        next(new HttpException(400, message));
+      } else {
+        next();
+      }
+    });
   };
 };
 

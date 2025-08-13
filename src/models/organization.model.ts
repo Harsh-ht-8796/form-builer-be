@@ -4,6 +4,7 @@ import { Document, model, Schema, Types } from 'mongoose';
 import { MODELS } from '@common/constants';
 import ITimesStamp from '@common/interfaces/timestamp.interface';
 import toJSON from '@utils/toJSON.plugin';
+import { ObjectId } from 'mongoose';
 
 export class IOrganization extends ITimesStamp {
   @IsNotEmpty()
@@ -15,7 +16,7 @@ export class IOrganization extends ITimesStamp {
   locality!: string;
 
   @IsNotEmpty()
-  createdBy!: Types.ObjectId;
+  createdBy!: ObjectId;
 }
 export interface IOrganizationSchema extends Document, IOrganization {}
 

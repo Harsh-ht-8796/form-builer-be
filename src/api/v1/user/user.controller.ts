@@ -48,8 +48,10 @@ export class UserController {
   })
   @ResponseSchema(IUser)
   @Authorized([UserRole.SUPER_ADMIN])
-  getCurrentUser(@CurrentUser() user: IUser) {
-    return { user };
+  async getCurrentUser(@CurrentUser() userDetaills: IUserSchema) {
+    console.log({ id: userDetaills.id })
+    const user = await this.userService.getById(userDetaills.id);
+    return user;
   }
 
   @Get('/by-org')
@@ -126,18 +128,6 @@ export class UserController {
     return { message: "User deleted successfully" };
   }
 
-
-  @Get('/:id')
-  @OpenAPI({
-    summary: 'Get all users',
-    description: 'Retrieve all users. Requires super admin or org admin role.',
-  })
-  @ResponseSchema(IUser)
-  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
-  async getUser(@CurrentUser() userDetaills: IUserSchema) {
-    const user = await this.userService.getById(userDetaills.id);
-    return { user };
-  }
 
   @Put('/')
   @OpenAPI({

@@ -1,11 +1,11 @@
 import { IsString } from 'class-validator';
-import { Types } from 'mongoose';
 import InviteRegisterDto from './invite-user-register.dto';
+import { ObjectId } from 'mongoose';
 
 
 export class UserOrganizationWithOrgIdDto extends InviteRegisterDto {
   @IsString()
-  orgId!: Types.ObjectId;
+  orgId!: ObjectId;
 }
 export const UserOrganizationResponseSchema = {
   '201': {

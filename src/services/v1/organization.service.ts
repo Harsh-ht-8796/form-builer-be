@@ -57,6 +57,7 @@ export class OrganizationService implements CRUD<IOrganizationSchema> {
   }
 
   async update(id: ObjectId, data: Partial<IOrganization>): Promise<IOrganizationSchema | null> {
+    
     return this.organizationModel.findByIdAndUpdate(id, data, { new: true });
   }
 

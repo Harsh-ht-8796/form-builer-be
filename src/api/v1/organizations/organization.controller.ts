@@ -6,11 +6,11 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { UserRole } from '@common/types/roles';
 import { auth } from '@middlewares/index';
 import { IOrganization } from '@models/organization.model';
-import { IUserSchema } from '@models/users.model';
+import { IUser, IUserSchema } from '@models/users.model';
 import { OrganizationService } from '@services/v1';
 
 import { OrganizationDto, OrganizationResponseSchema } from './dtos/organization.dto';
-import InviteRegisterDto, { InviteRegisterArrayDto } from './dtos/invite-user-register.dto';
+import { InviteRegisterArrayDto } from './dtos/invite-user-register.dto';
 
 @JsonController('/v1/organizations', { transformResponse: false })
 export class OrganizationController {
@@ -65,12 +65,13 @@ export class OrganizationController {
     return mappedOrgWithUser;
   }
 
-  @Get('/:id')
+  @Get('/me')
+  @UseBefore(auth())
   @OpenAPI({ summary: 'Get an organization by ID', responses: OrganizationResponseSchema })
   @ResponseSchema(IOrganization)
-  async get(@Param('id') id: ObjectId, next: NextFunction) {
+  async get(@CurrentUser() userDetails: IUserSchema, next: NextFunction) {
     try {
-      const organization = await this.organizationService.getById(id);
+      const organization = await this.organizationService.getById(userDetails.orgId);
       if (!organization) {
         throw new Error('Organization not found');
       }
@@ -80,14 +81,14 @@ export class OrganizationController {
     }
   }
 
-  @Put('/:id')
+  @Put('/')
   @OpenAPI({ summary: 'Update an existing organization', responses: OrganizationResponseSchema })
   @ResponseSchema(IOrganization)
   //@UseBefore(validationMiddleware(OrganizationDto, 'body'))
   @UseBefore(auth())
-  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
-  async update(@Param('id') id: ObjectId, @Body() organizationData: Partial<IOrganization>) {
-    const organization = await this.organizationService.update(id, organizationData);
+  // @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
+  async update(@CurrentUser() userDetails: IUser, @Body() organizationData: Partial<IOrganization>) {
+    const organization = await this.organizationService.update(userDetails.orgId, organizationData);
     if (!organization) {
       throw new Error('Organization not found');
     }

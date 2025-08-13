@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { IsArray, IsBoolean, IsEmail, IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import mongoose, { Document, ObjectId, Schema, Types } from 'mongoose';
 
 import { MODELS } from '@common/constants';
 import ITimesStamp from '@common/interfaces/timestamp.interface';
@@ -21,7 +21,7 @@ export class IUser extends ITimesStamp {
   isEmailVerified!: boolean;
 
   @IsMongoId()
-  orgId?: Types.ObjectId;
+  orgId?: ObjectId;
 
   @IsArray()
   @IsEnum(UserRole, { each: true })

@@ -1,11 +1,14 @@
 import { OrgAdmin, SuperAdmin, TeamMember } from '@decorators';
-import { Authorized, CurrentUser, Get, JsonController, UseBefore } from 'routing-controllers';
+import { Authorized, Body, CurrentUser, Delete, Get, JsonController, Param, Put, QueryParams, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { UserRole } from '@common/types/roles';
 import auth from '@middlewares/auth.middleware';
-import { IUser } from '@models/users.model';
+import { IRoles, IUser, IUserSchema } from '@models/users.model';
 import { UserService } from '@services/v1';
+import UserSearchDto from './form-search.dto';
+import { UserOrganizationResponseSchema } from '@v1/organizations/dtos/invite-organization.dto';
+import { ObjectId } from 'mongoose';
 
 @UseBefore(auth())
 @JsonController('/v1/users', { transformResponse: false })
@@ -25,6 +28,18 @@ export class UserController {
     return { users };
   }
 
+  @Get('/roles')
+  @OpenAPI({
+    summary: 'Get all users roles',
+    description: 'Retrieve all users. Requires super admin or org admin role.',
+  })
+  @ResponseSchema(IRoles, { isArray: true })
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
+  async getAllUsersRoles() {
+    const roles = await this.userService.getAllRoles();
+    return { roles };
+  }
+
   @Get('/me')
   @OpenAPI({
     summary: 'Get current user profile',
@@ -35,6 +50,27 @@ export class UserController {
   @Authorized([UserRole.SUPER_ADMIN])
   getCurrentUser(@CurrentUser() user: IUser) {
     return { user };
+  }
+
+  @Get('/by-org')
+  @OpenAPI({
+    summary: 'Get current user profile',
+    description: 'Retrieve the profile of the currently authenticated user.',
+    security: [{ bearerAuth: [] }],
+  })
+  @ResponseSchema(IUser)
+  @Authorized([UserRole.SUPER_ADMIN])
+  async getUserByOrg(@QueryParams() query: UserSearchDto, @CurrentUser() user: IUser) {
+    const { limit = 10, page = 0, email, ...rest } = query;
+
+    const users = await this.userService.findAllByOrg({
+      filter: {
+        orgId: user.orgId,
+        ...(email ? { email } : {})
+      }
+    })
+
+    return { users }
   }
 
   @Get('/admins')
@@ -74,5 +110,44 @@ export class UserController {
   async getRegularUsers() {
     const regularUsers = await this.userService.findByRoles([UserRole.USER]);
     return { users: regularUsers };
+  }
+
+  @Delete('/:id')
+  @OpenAPI({ summary: 'Delete a user by ID', responses: UserOrganizationResponseSchema })
+  @ResponseSchema(IUser)
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN,])
+  async delete(@Param('id') id: ObjectId) {
+    const user = await this.userService.delete(id);
+    if (!user) {
+      throw new Error('User not found');
+
+    }
+    return { message: "User deleted successfully" };
+  }
+
+
+  @Get('/:id')
+  @OpenAPI({
+    summary: 'Get all users',
+    description: 'Retrieve all users. Requires super admin or org admin role.',
+  })
+  @ResponseSchema(IUser)
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
+  async getUser(@CurrentUser() userDetaills: IUserSchema) {
+    const user = await this.userService.getById(userDetaills.id);
+    return { user };
+  }
+
+  @Put('/')
+  @OpenAPI({
+    summary: 'Update  users',
+    description: 'Update  users.',
+  })
+  @ResponseSchema(IUser)
+  async updateUser(@CurrentUser() userDetaills: IUserSchema, @Body() updateBody: Partial<IUser>) {
+    console.log({ updateBody })
+    const user = await this.userService.updateById(userDetaills.id, updateBody);
+    return { user };
   }
 }

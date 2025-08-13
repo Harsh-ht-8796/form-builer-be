@@ -5,12 +5,12 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { UserRole } from '@common/types/roles';
 import { auth } from '@middlewares/index';
-import validationMiddleware from '@middlewares/validation.middleware';
 import { IOrganization } from '@models/organization.model';
 import { IUserSchema } from '@models/users.model';
 import { OrganizationService } from '@services/v1';
 
 import { OrganizationDto, OrganizationResponseSchema } from './dtos/organization.dto';
+import InviteRegisterDto, { InviteRegisterArrayDto } from './dtos/invite-user-register.dto';
 
 @JsonController('/v1/organizations', { transformResponse: false })
 export class OrganizationController {
@@ -30,6 +30,26 @@ export class OrganizationController {
   }
 
 
+  @Post('/user-invite')
+  @HttpCode(201)
+  @OpenAPI({ summary: 'register new user' })
+  @ResponseSchema(IOrganization)
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN])
+  //@UseBefore(validationMiddleware(RegisterDto, 'body'))
+  async userInvite(@Body() userData: InviteRegisterArrayDto, @CurrentUser() userDetails: IUserSchema) {
+
+    const modified = userData.users.map(user => {
+      return {
+        ...user,
+        orgId: userDetails.orgId
+      }
+    });
+
+    await this.organizationService.userInvitation(modified);
+
+    return { message: "User successfully inviated" };
+  }
 
   @Post('/map-to-user')
   @HttpCode(201)

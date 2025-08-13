@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { IsArray, IsBoolean, IsEmail, IsEnum, IsMongoId, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
 import { MODELS } from '@common/constants';
@@ -26,6 +26,16 @@ export class IUser extends ITimesStamp {
   @IsArray()
   @IsEnum(UserRole, { each: true })
   roles!: UserRole[];
+
+  @IsString()
+  @IsOptional()
+  profileUrl: string;
+}
+
+export class IRoles {
+  @IsArray()
+  @IsEnum(UserRole, { each: true })
+  roles!: UserRole[];
 }
 
 export interface IUserSchema extends Document, IUser { }
@@ -34,7 +44,6 @@ const userSchema: Schema = new Schema(
   {
     username: {
       type: String,
-      required: true,
       maxlength: 20,
       trim: true,
     },
@@ -68,6 +77,11 @@ const userSchema: Schema = new Schema(
       default: [UserRole.USER],
       required: true,
     },
+    profileUrl: {
+      type: String,
+      required: false,
+      default: null
+    },
   },
   {
     timestamps: true,
@@ -84,6 +98,14 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
+userSchema.pre('insertMany', async function (next, docs: IUserSchema[]) {
+  for (const doc of docs) {
+    if (typeof doc.password === 'string') {
+      doc.password = await bcrypt.hash(doc.password, 8);
+    }
+  }
+  next();
+});
 userSchema.plugin(toJSON);
 
 export default mongoose.model<IUserSchema>(MODELS.USERS, userSchema);

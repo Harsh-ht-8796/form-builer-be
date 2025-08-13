@@ -15,7 +15,7 @@ export class FormService implements CRUD<IFormSchema> {
     return this.formModel.create(data);
   }
 
-  
+
 
   async findAll(findParams: {
     filter?: FilterQuery<IFormSchema>,
@@ -23,23 +23,31 @@ export class FormService implements CRUD<IFormSchema> {
     page?: number,
     user?: IUserSchema,
   }): Promise<{ docs: IFormSchema[]; meta: { totalDocs: number; totalPages: number; page: number } }> {
-    console.log({ filter: findParams.user })
 
+    console.log({ filter: findParams.user });
 
+    const mode = findParams?.filter?.mode;
+
+    // Title search
     if (typeof findParams?.filter?.title === 'string') {
-      if (findParams?.filter?.title) {
+      if (findParams.filter.title) {
         findParams.filter.title = { $regex: findParams.filter.title, $options: 'i' };
       } else {
-        delete findParams.filter.title
+        delete findParams.filter.title;
       }
     }
 
+    // Boolean conversion
     if (findParams?.filter?.isActive && typeof findParams?.filter?.isActive === 'string') {
-      findParams.filter.isActive = findParams.filter.isActive === 'true' ? true : false;
+      findParams.filter.isActive = findParams.filter.isActive === 'true';
     }
-    if (findParams?.filter?.fromDate && typeof findParams?.filter?.fromDate === 'string' && findParams?.filter?.toDate && typeof findParams?.filter?.toDate === 'string') {
 
-      const fromParts = findParams.filter.fromDate.trim().split('-'); // ['31', '07', '2025']
+    // Date range filter
+    if (
+      typeof findParams?.filter?.fromDate === 'string' &&
+      typeof findParams?.filter?.toDate === 'string'
+    ) {
+      const fromParts = findParams.filter.fromDate.trim().split('-');
       const toParts = findParams.filter.toDate.trim().split('-');
 
       if (fromParts.length === 3 && toParts.length === 3) {
@@ -47,43 +55,59 @@ export class FormService implements CRUD<IFormSchema> {
         const toDate = dayjs(`${toParts[2]}-${toParts[1]}-${toParts[0]}`, 'YYYY-MM-DD').endOf('day');
 
         if (fromDate.isValid() && toDate.isValid()) {
-          findParams.filter.createdAt = { $gte: new Date(fromDate.toDate()), $lte: new Date(toDate.toDate()) };
+          findParams.filter.createdAt = { $gte: fromDate.toDate(), $lte: toDate.toDate() };
           delete findParams.filter.fromDate;
           delete findParams.filter.toDate;
         }
       }
     }
 
-    if ((findParams?.filter?.mode && typeof findParams?.filter?.mode === 'string') || (findParams?.filter?.status && typeof findParams?.filter?.status === 'string')) {
-      findParams.filter.orgId = findParams.user.orgId
+    // Org restriction
+    if (
+      (findParams?.filter?.mode && typeof findParams?.filter?.mode === 'string') ||
+      (findParams?.filter?.status && typeof findParams?.filter?.status === 'string')
+    ) {
+      findParams.filter.orgId = findParams.user.orgId;
     }
 
-    if (findParams?.filter?.mode && typeof findParams?.filter?.mode === 'string') {
-      if (findParams.filter.mode === 'sent') {
-        findParams.filter.status = 'published'
+    // Mode to status conversion
+    if (mode && typeof mode === 'string') {
+      if (mode === 'sent') {
+        findParams.filter.status = 'published';
       }
       delete findParams.filter.mode;
     }
 
-    console.log({ filter: findParams.filter })
+    // Projection setup
+    let projection: Record<string, any> = {};
+    if (findParams.filter.status === 'draft') {
+      projection = { allowedDomains: 0, allowedEmails: 0 }; // hide completely
+    } else if (mode === 'sent') {
+      projection = {
+        allowedDomains: { $slice: 2 },
+        allowedEmails: { $slice: 2 },
+      }; // only first element
+    }
+
+    console.log({ filter: findParams.filter, projection });
 
     const totalDocs = await this.formModel.countDocuments(findParams.filter);
     const docs = await this.formModel
       .find(findParams.filter)
       .limit(findParams.limit)
       .skip(findParams.limit * findParams.page)
-      .select({ allowedDomains: 0, allowedEmails: 0 }) // Exclude sensitive fields
+      .select(projection)
       .sort({ createdAt: -1 })
       .lean();
-    const modifedData = JSON.parse(JSON.stringify(docs)).map((doc: any) => {
-      return {
-        ...doc,
-        createdAt: dayjs(doc.createdAt).format('DD-MM-YYYY').toString(),
-        updatedAt: dayjs(doc.createdAt).format('DD-MM-YYYY').toString(),
-      };
-    })
+
+    const modifiedData = docs.map((doc: any) => ({
+      ...doc,
+      createdAt: dayjs(doc.createdAt).format('DD-MM-YYYY'),
+      updatedAt: dayjs(doc.updatedAt).format('DD-MM-YYYY'),
+    }));
+
     return {
-      docs: modifedData,
+      docs: modifiedData,
       meta: {
         totalDocs,
         totalPages: Math.ceil(totalDocs / findParams.limit) || 0,
@@ -91,6 +115,7 @@ export class FormService implements CRUD<IFormSchema> {
       },
     };
   }
+
 
   async getById(id: ObjectId): Promise<IFormSchema | null> {
     return this.formModel.findById(id, {

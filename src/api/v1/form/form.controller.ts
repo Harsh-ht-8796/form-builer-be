@@ -1,10 +1,11 @@
+
 import { NextFunction } from 'express';
 import { ObjectId } from 'mongoose';
 import { Authorized, Body, CurrentUser, Delete, Get, HttpCode, JsonController, Param, Post, Put, QueryParam, QueryParams, UseBefore, Req, BadRequestError } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import crypto from 'crypto';
 import { UserRole } from '@common/types/roles';
-import { auth, conditionalAuth, validationMiddleware } from '@middlewares/index';
+import { auth, conditionalAuth } from '@middlewares/index';
 import formModel, { IForm } from '@models/form.model';
 import { IUserSchema } from '@models/users.model';
 import { FormService } from '@services/v1';
@@ -14,7 +15,19 @@ import FormDto, { FormResponseSchema } from './dtos/form.dto';
 import FormSearchDto from './dtos/form-search.dto';
 import upload from './multer';
 import isFormExists from '@middlewares/is.form.exists';
+import { IsArray, IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
 import { fileTypeFromBuffer } from 'file-type';
+
+class UpdateVisibilityDto {
+  @IsArray()
+  @IsIn(['public', 'private', 'domain_restricted'], { each: true })
+  visibility!: ("public" | "private" | "domain_restricted")[];
+
+  @IsArray()
+  @IsOptional()
+  @IsEmail({}, { each: true })
+  allowedEmails?: string[];
+}
 
 @JsonController('/v1/forms', { transformResponse: false })
 export class FormController {
@@ -28,14 +41,12 @@ export class FormController {
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
   async create(@Body() formData: FormDto, @CurrentUser() user: IUserSchema) {
-    const createdBy = user?._id?.toString(); // Assuming user is attached to the request
-    const orgId = user?.orgId; // Assuming user is attached to the request
+    const createdBy = user?._id?.toString();
+    const orgId = user?.orgId;
     console.log(orgId)
-    const form = await this.formService.create({ ...formData, createdBy, ...(orgId && orgId ? { orgId: orgId as unknown as ObjectId } : {}) });
+    const form = await this.formService.create({ ...formData, status: "draft", createdBy, ...(orgId && orgId ? { orgId: orgId as unknown as ObjectId } : {}) });
     return form;
   }
-
-
 
   @Get('/')
   @OpenAPI({ summary: 'Get all forms', responses: FormResponseSchema })
@@ -75,10 +86,58 @@ export class FormController {
     }
   }
 
+  @Put('/:id/update-visibility')
+  @OpenAPI({ summary: 'Update form visibility and allowed emails', responses: FormResponseSchema })
+  @ResponseSchema(IForm)
+  // @UseBefore(validationMiddleware(UpdateVisibilityDto, 'body'))
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
+  async updateVisibility(@Param('id') id: ObjectId, @Body() updateData: UpdateVisibilityDto) {
+    const form = await this.formService.getById(id);
+    if (!form) {
+      throw new Error('Form not found');
+    }
+
+    console.log("Form data===>", {
+      settings: {
+        ...form.settings,
+        visibility: updateData.visibility
+      },
+      allowedEmails: updateData.allowedEmails
+    })
+    const updatedForm = await this.formService.update(id, {
+      settings: {
+        ...form.settings,
+        visibility: updateData.visibility
+      },
+      allowedEmails: updateData.allowedEmails
+    });
+    if (!updatedForm) {
+      throw new Error('Form update failed');
+    }
+    return updatedForm;
+  }
+
+  @Get('/:id/visibility')
+  @OpenAPI({ summary: 'Get form visibility and allowed emails', responses: { '200': { description: 'Visibility and allowed emails' } } })
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
+  async getVisibilityAndEmails(@Param('id') id: ObjectId, next: NextFunction) {
+    try {
+      const result = await this.formService.getVisibilityAndEmails(id);
+      if (!result) {
+        throw new Error('Form not found');
+      }
+      return result;
+    } catch (err) {
+      next(err);
+    }
+  }
+
   @Put('/:id')
   @OpenAPI({ summary: 'Update an existing form', responses: FormResponseSchema })
   @ResponseSchema(IForm)
-  // @UseBefore(validationMiddleware(FormDto, 'body'))
+  //@UseBefore(validationMiddleware(FormDto, 'body'))
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
   async update(@Param('id') id: ObjectId, @Body() formData: Partial<IForm>) {
@@ -88,6 +147,7 @@ export class FormController {
     }
     return form;
   }
+
 
   @Delete('/:id')
   @OpenAPI({ summary: 'Delete a form by ID', responses: FormResponseSchema })
@@ -148,6 +208,7 @@ export class FormController {
 
     return result;
   }
+
   @Post('/:id/publish')
   @OpenAPI({ summary: 'Publish a form by ID', responses: FormResponseSchema })
   @ResponseSchema(IForm)
@@ -161,6 +222,3 @@ export class FormController {
     return form;
   }
 }
-
-
-

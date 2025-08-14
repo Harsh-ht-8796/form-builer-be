@@ -1,11 +1,10 @@
 "use strict";
-// Form Service
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FormService = void 0;
-const form_model_1 = __importDefault(require("../../models/form.model"));
+const form_model_1 = __importDefault(require("@models/form.model"));
 const dayjs_1 = __importDefault(require("dayjs"));
 class FormService {
     constructor() {
@@ -14,55 +13,85 @@ class FormService {
     async create(data) {
         return this.formModel.create(data);
     }
-    async findAll(filter = {}, limit = 10, page = 0) {
-        if (typeof (filter === null || filter === void 0 ? void 0 : filter.title) === 'string') {
-            if (filter === null || filter === void 0 ? void 0 : filter.title) {
-                filter.title = { $regex: filter.title, $options: 'i' };
+    async findAll(findParams) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        console.log({ filter: findParams.user });
+        const mode = (_a = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _a === void 0 ? void 0 : _a.mode;
+        findParams.filter = findParams.filter || {};
+        // Title search
+        if (typeof ((_b = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _b === void 0 ? void 0 : _b.title) === 'string') {
+            if (findParams.filter.title) {
+                findParams.filter.title = { $regex: findParams.filter.title, $options: 'i' };
             }
             else {
-                delete filter.title;
+                delete findParams.filter.title;
             }
         }
-        if ((filter === null || filter === void 0 ? void 0 : filter.isActive) && typeof (filter === null || filter === void 0 ? void 0 : filter.isActive) === 'string') {
-            filter.isActive = filter.isActive === 'true' ? true : false;
+        // Boolean conversion
+        if (((_c = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _c === void 0 ? void 0 : _c.isActive) && typeof ((_d = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _d === void 0 ? void 0 : _d.isActive) === 'string') {
+            findParams.filter.isActive = findParams.filter.isActive === 'true';
         }
-        if ((filter === null || filter === void 0 ? void 0 : filter.fromDate) && typeof (filter === null || filter === void 0 ? void 0 : filter.fromDate) === 'string' && (filter === null || filter === void 0 ? void 0 : filter.toDate) && typeof (filter === null || filter === void 0 ? void 0 : filter.toDate) === 'string') {
-            const fromParts = filter.fromDate.trim().split('-'); // ['31', '07', '2025']
-            const toParts = filter.toDate.trim().split('-');
+        // Date range filter
+        if (typeof ((_e = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _e === void 0 ? void 0 : _e.fromDate) === 'string' &&
+            typeof ((_f = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _f === void 0 ? void 0 : _f.toDate) === 'string') {
+            const fromParts = findParams.filter.fromDate.trim().split('-');
+            const toParts = findParams.filter.toDate.trim().split('-');
             if (fromParts.length === 3 && toParts.length === 3) {
                 const fromDate = (0, dayjs_1.default)(`${fromParts[2]}-${fromParts[1]}-${fromParts[0]}`, 'YYYY-MM-DD').startOf('day');
                 const toDate = (0, dayjs_1.default)(`${toParts[2]}-${toParts[1]}-${toParts[0]}`, 'YYYY-MM-DD').endOf('day');
                 if (fromDate.isValid() && toDate.isValid()) {
-                    filter.createdAt = { $gte: new Date(fromDate.toDate()), $lte: new Date(toDate.toDate()) };
-                    delete filter.fromDate;
-                    delete filter.toDate;
+                    findParams.filter.createdAt = { $gte: fromDate.toDate(), $lte: toDate.toDate() };
+                    delete findParams.filter.fromDate;
+                    delete findParams.filter.toDate;
                 }
             }
         }
-        const totalDocs = await this.formModel.countDocuments(filter);
+        // Org restriction
+        if ((((_g = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _g === void 0 ? void 0 : _g.mode) && typeof ((_h = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _h === void 0 ? void 0 : _h.mode) === 'string') ||
+            (((_j = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _j === void 0 ? void 0 : _j.status) && typeof ((_k = findParams === null || findParams === void 0 ? void 0 : findParams.filter) === null || _k === void 0 ? void 0 : _k.status) === 'string')) {
+            findParams.filter.orgId = findParams.user.orgId;
+        }
+        // Mode to status conversion
+        if (mode && typeof mode === 'string') {
+            if (mode === 'sent') {
+                findParams.filter.status = 'published';
+            }
+            delete findParams.filter.mode;
+        }
+        // Projection setup
+        let projection = {};
+        if (findParams.filter.status === 'draft') {
+            projection = { allowedDomains: 0, allowedEmails: 0 }; // hide completely
+        }
+        else if (mode === 'sent') {
+            projection = {
+                allowedDomains: { $slice: 2 },
+                allowedEmails: { $slice: 2 },
+            }; // only first two elements
+        }
+        console.log({ filter: findParams.filter, projection });
+        const totalDocs = await this.formModel.countDocuments(findParams.filter);
         const docs = await this.formModel
-            .find(filter)
-            .limit(limit)
-            .skip(limit * page)
-            .select({ allowedDomains: 0, allowedEmails: 0 }) // Exclude sensitive fields
+            .find(findParams.filter)
+            .limit(findParams.limit)
+            .skip(findParams.limit * findParams.page)
+            .select(projection)
             .sort({ createdAt: -1 })
             .lean();
-        const modifedData = JSON.parse(JSON.stringify(docs)).map((doc) => {
-            return Object.assign(Object.assign({}, doc), { createdAt: (0, dayjs_1.default)(doc.createdAt).format('DD-MM-YYYY').toString(), updatedAt: (0, dayjs_1.default)(doc.createdAt).format('DD-MM-YYYY').toString() });
-        });
+        const modifiedData = docs.map((doc) => (Object.assign(Object.assign({}, doc), { createdAt: (0, dayjs_1.default)(doc.createdAt).format('DD-MM-YYYY'), updatedAt: (0, dayjs_1.default)(doc.updatedAt).format('DD-MM-YYYY') })));
         return {
-            docs: modifedData,
+            docs: modifiedData,
             meta: {
                 totalDocs,
-                totalPages: Math.ceil(totalDocs / limit) || 0,
-                page,
+                totalPages: Math.ceil(totalDocs / findParams.limit) || 0,
+                page: findParams.page,
             },
         };
     }
     async getById(id) {
         return this.formModel.findById(id, {
             allowedDomains: 0,
-            alowedEmails: 0,
+            allowedEmails: 0,
         });
     }
     async update(id, data) {

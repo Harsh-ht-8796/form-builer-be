@@ -29,7 +29,7 @@ export class IUser extends ITimesStamp {
 
   @IsString()
   @IsOptional()
-  profileUrl: string;
+  profileImage: string;
 }
 
 export class IRoles {
@@ -77,7 +77,7 @@ const userSchema: Schema = new Schema(
       default: [UserRole.USER],
       required: true,
     },
-    profileUrl: {
+    profileImage: {
       type: String,
       required: false,
       default: null

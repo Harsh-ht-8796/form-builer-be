@@ -194,4 +194,22 @@ export class UserService implements CRUD<IUserSchema> {
   async delete(id: ObjectId): Promise<IUser | null> {
     return this.userModel.findByIdAndDelete(id);
   }
+
+  async changePassword(userId: ObjectId, oldPassword: string, newPassword: string) {
+    const user = await this.getById(userId);
+    if (!user) {
+      throw new BadRequestError('User not found');
+    }
+
+    const isMatch = await this.comparePassword(oldPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestError('Old password is incorrect');
+    }
+
+    user.password = newPassword; // will be hashed by pre-save hook
+    await user.save();
+
+    return { message: 'Password updated successfully' };
+  }
+
 }

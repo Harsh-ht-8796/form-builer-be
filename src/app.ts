@@ -83,7 +83,7 @@ export default class App {
     // if (isProduction) {
     //   this.app.use(Sentry.Handlers.errorHandler() as ErrorRequestHandler);
     // }
-    this.app.use(handlingErrorsMiddleware as ErrorRequestHandler);
+    this.app.use(handlingErrorsMiddleware);
   }
 
   static async initDB() {

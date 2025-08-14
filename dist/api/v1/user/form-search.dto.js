@@ -10,37 +10,32 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const class_validator_1 = require("class-validator");
-class FormSearchDto {
+class UserSearchDto {
 }
-exports.default = FormSearchDto;
+exports.default = UserSearchDto;
 __decorate([
     (0, class_validator_1.IsPositive)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
-], FormSearchDto.prototype, "limit", void 0);
+], UserSearchDto.prototype, "limit", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
-], FormSearchDto.prototype, "page", void 0);
-__decorate([
-    (0, class_validator_1.IsEnum)(['draft', 'published']),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], FormSearchDto.prototype, "status", void 0);
+], UserSearchDto.prototype, "page", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], FormSearchDto.prototype, "fromDate", void 0);
+], UserSearchDto.prototype, "fromDate", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], FormSearchDto.prototype, "toDate", void 0);
+], UserSearchDto.prototype, "toDate", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], FormSearchDto.prototype, "mode", void 0);
+], UserSearchDto.prototype, "email", void 0);
 //# sourceMappingURL=form-search.dto.js.map

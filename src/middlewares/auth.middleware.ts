@@ -4,7 +4,9 @@ import { NextFunction, Request, Response } from 'express';
 
 const verifyCallback = (req : Request, resolve: any, reject: any) => async (err: any, user: any, info: any) => {
   if (err || info || !user) {
-    return reject(new UnauthorizedError('Please authenticate'));
+    const unauthorizedError = new UnauthorizedError("Please authenticate");
+    unauthorizedError.httpCode = 401; // Explicitly set httpCode
+    return reject(unauthorizedError);
   }
   req.user = user;
 

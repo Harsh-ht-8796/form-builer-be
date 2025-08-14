@@ -6,7 +6,7 @@ exports.OrgAdmin = OrgAdmin;
 exports.TeamMember = TeamMember;
 exports.User = User;
 const routing_controllers_1 = require("routing-controllers");
-const roles_1 = require("../common/types/roles");
+const roles_1 = require("@common/types/roles");
 function Roles(roles, options = {}) {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     return (0, routing_controllers_1.createParamDecorator)({

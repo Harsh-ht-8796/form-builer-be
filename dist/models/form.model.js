@@ -14,9 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IForm = exports.IFormField = exports.IFormSettings = void 0;
 const mongoose_1 = require("mongoose");
-const constants_1 = require("../common/constants");
+const constants_1 = require("@common/constants");
 const organization_model_1 = __importDefault(require("./organization.model"));
-const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
+const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class IFormSettings {
@@ -24,6 +24,7 @@ class IFormSettings {
 exports.IFormSettings = IFormSettings;
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], IFormSettings.prototype, "backgroundColor", void 0);
 __decorate([
@@ -33,12 +34,14 @@ __decorate([
 ], IFormSettings.prototype, "headerImage", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ each: true }),
     __metadata("design:type", Array)
 ], IFormSettings.prototype, "emailNotifications", void 0);
 __decorate([
-    (0, class_validator_1.IsIn)(['public', 'private', 'domain_restricted']),
-    __metadata("design:type", String)
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsIn)(['public', 'private', 'domain_restricted'], { each: true }),
+    __metadata("design:type", Array)
 ], IFormSettings.prototype, "visibility", void 0);
 class IFormField {
 }
@@ -120,6 +123,12 @@ __decorate([
 ], IForm.prototype, "allowedDomains", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsEmail)({}, { each: true }),
+    __metadata("design:type", Array)
+], IForm.prototype, "allowedEmails", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], IForm.prototype, "coverImageUrl", void 0);
@@ -138,12 +147,6 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], IForm.prototype, "logoImage", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsString)({ each: true }),
-    __metadata("design:type", Array)
-], IForm.prototype, "alowedEmails", void 0);
 __decorate([
     (0, class_validator_1.ValidateNested)(),
     (0, class_transformer_1.Type)(() => IFormSettings),
@@ -165,7 +168,7 @@ const formSchema = new mongoose_1.Schema({
     title: { type: String, default: '' },
     description: { type: String, default: '' },
     allowedDomains: { type: [String], default: [] },
-    alowedEmails: { type: [String], default: [] },
+    allowedEmails: { type: [String], default: [] },
     fields: [
         {
             id: { type: String, required: true },
@@ -178,7 +181,7 @@ const formSchema = new mongoose_1.Schema({
                     "textarea",
                     "text"
                 ], default: 'text', required: true
-            }, // Added fieldType for compatibility with FormFieldType
+            },
             title: { type: String, required: true },
             options: [String],
             order: { type: Number, default: 0 },
@@ -189,10 +192,12 @@ const formSchema = new mongoose_1.Schema({
         backgroundColor: { type: String, default: 'cyan' },
         headerImage: String,
         emailNotifications: { type: [String], default: [] },
-        visibility: { type: String, enum: ['public', 'private', 'domain_restricted'], default: 'private' },
-    },
-    isActive: { type: Boolean, default: true },
-    status: { type: String, enum: ['draft', 'published'], default: 'draft' },
+        visibility: {
+            type: [String], // make it an array
+            enum: ['public', 'private', 'domain_restricted'],
+            default: ['public'], // default as an array
+        },
+    }
 }, {
     timestamps: true,
 });

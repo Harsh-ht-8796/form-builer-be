@@ -4,7 +4,7 @@ import { Types } from 'mongoose';
 import auth from '@middlewares/auth.middleware';
 import FormModel from '@models/form.model';
 
-const conditionalAuth = (compareField='id') => {
+const conditionalAuth = (compareField = 'id') => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params[compareField];
     const objectId = Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : null;
@@ -16,7 +16,7 @@ const conditionalAuth = (compareField='id') => {
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
     }
-    if (form.settings?.visibility !== 'private') {
+    if ((form.settings?.visibility?.includes('public'))) {
       return next();
     }
     return auth()(req, res, next);

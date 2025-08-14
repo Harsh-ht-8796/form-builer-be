@@ -10,37 +10,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const class_validator_1 = require("class-validator");
-class FormSearchDto {
+class ChangePasswordDto {
 }
-exports.default = FormSearchDto;
-__decorate([
-    (0, class_validator_1.IsPositive)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], FormSearchDto.prototype, "limit", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], FormSearchDto.prototype, "page", void 0);
-__decorate([
-    (0, class_validator_1.IsEnum)(['draft', 'published']),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], FormSearchDto.prototype, "status", void 0);
+exports.default = ChangePasswordDto;
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], FormSearchDto.prototype, "fromDate", void 0);
+], ChangePasswordDto.prototype, "oldPassword", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MinLength)(6, { message: 'Password must be at least 6 characters long' }),
     __metadata("design:type", String)
-], FormSearchDto.prototype, "toDate", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], FormSearchDto.prototype, "mode", void 0);
-//# sourceMappingURL=form-search.dto.js.map
+], ChangePasswordDto.prototype, "newPassword", void 0);
+//# sourceMappingURL=changePassword.dto.js.map

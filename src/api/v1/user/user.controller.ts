@@ -1,14 +1,21 @@
 import { OrgAdmin, SuperAdmin, TeamMember } from '@decorators';
-import { Authorized, Body, CurrentUser, Delete, Get, JsonController, Param, Put, QueryParams, UseBefore } from 'routing-controllers';
+import { Authorized, BadRequestError, Body, CurrentUser, Delete, Get, HttpCode, JsonController, Param, Post, Put, QueryParams, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
+import crypto from 'crypto';
 
 import { UserRole } from '@common/types/roles';
 import auth from '@middlewares/auth.middleware';
-import { IRoles, IUser, IUserSchema } from '@models/users.model';
+import usersModel, { IRoles, IUser, IUserSchema } from '@models/users.model';
 import { UserService } from '@services/v1';
 import UserSearchDto from './form-search.dto';
 import { UserOrganizationResponseSchema } from '@v1/organizations/dtos/invite-organization.dto';
 import { ObjectId } from 'mongoose';
+import upload from '@v1/form/multer';
+import path from 'path';
+import fs from 'fs';
+import { fileTypeFromBuffer } from 'file-type';
+import ChangePasswordDto from './changePassword.dto';
+
 
 @UseBefore(auth())
 @JsonController('/v1/users', { transformResponse: false })
@@ -114,6 +121,36 @@ export class UserController {
     return { users: regularUsers };
   }
 
+  @Delete('/delete-profile-image')
+  @HttpCode(200)
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
+  async deleteProfileImage(@CurrentUser() user: IUserSchema) {
+    // 1. Find user in DB
+    console.log({ id: user.id })
+    const userDoc = await usersModel.findById(user.id)
+    if (!userDoc || !userDoc.profileImage) {
+      throw new BadRequestError('No profile image found to delete');
+    }
+
+    // 2. Resolve file path
+    const relativePath = userDoc.profileImage.startsWith('/uploads/')
+      ? userDoc.profileImage
+      : `/uploads/${userDoc.profileImage}`;
+    const filePath = path.join(process.cwd(), relativePath);
+
+    // 3. Delete file from disk (if exists)
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // 4. Update user doc to remove profileImage
+    await usersModel.updateOne({ _id: user.id }, { $unset: { profileImage: '' } });
+
+    return {
+      message: 'Profile image deleted successfully',
+    };
+  }
+
   @Delete('/:id')
   @OpenAPI({ summary: 'Delete a user by ID', responses: UserOrganizationResponseSchema })
   @ResponseSchema(IUser)
@@ -140,4 +177,66 @@ export class UserController {
     const user = await this.userService.updateById(userDetaills.id, updateBody);
     return { user };
   }
+
+
+  @Post('/upload-images')
+  @HttpCode(201)
+  @OpenAPI({ summary: 'Upload cover and logo images (multipart/form-data)' })
+  @UseBefore(upload.fields([
+    { name: 'profileImage', maxCount: 1 }]))
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
+  async uploadImages(
+    @CurrentUser() user: IUserSchema,
+    @Req() req: any
+  ) {
+    const files = req.files as Record<string, Express.Multer.File[]>;
+    if (!files || Object.keys(files).length === 0) {
+      throw new BadRequestError('No images uploaded');
+    }
+
+    const result: Record<string, any> = {};
+
+    for (const key of Object.keys(files)) {
+      const arr = files[key];
+      if (!arr || arr.length === 0) continue;
+
+      const file = arr[0];
+      const fullPath = path.join(file.destination!, file.filename);
+      const buffer = fs.readFileSync(fullPath);
+
+      const type = await fileTypeFromBuffer(buffer);
+      if (!type || !['image/jpeg', 'image/png', 'image/gif'].includes(type.mime)) {
+        fs.unlinkSync(fullPath);
+        throw new BadRequestError(`${key} has invalid content`);
+      }
+
+      const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+
+      result[`${key}Url`] = `/uploads/${file.filename}`;
+      console.log({ key })
+      const updatedForm = await usersModel.updateOne({ _id: user.id }, { [`${key}`]: `/uploads/${file.filename}` });
+      console.log({ updatedForm })
+      result[`${key}Hash`] = hash;
+    }
+
+    return result;
+  }
+
+
+  @Post('/change-password')
+  @OpenAPI({ summary: 'Change current user password' })
+  //@UseBefore(validationMiddleware(ChangePasswordDto, 'body'))
+  async changePassword(
+    @Body() userData: ChangePasswordDto,
+    @CurrentUser() currentUser: IUserSchema
+  ) {
+    console.log({ id: currentUser.id })
+    return await this.userService.changePassword(
+      currentUser.id,
+      userData.oldPassword,
+      userData.newPassword
+    );
+  }
+
+
 }

@@ -37,15 +37,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validationMiddleware = exports.roles = exports.morganLogger = exports.handlingErrors = exports.conditionalAuth = exports.auth = void 0;
-var auth_middleware_1 = require("./auth.middleware");
+var auth_middleware_1 = require("@middlewares/auth.middleware");
 Object.defineProperty(exports, "auth", { enumerable: true, get: function () { return __importDefault(auth_middleware_1).default; } });
-var conditional_auth_1 = require("./conditional.auth");
+var conditional_auth_1 = require("@middlewares/conditional.auth");
 Object.defineProperty(exports, "conditionalAuth", { enumerable: true, get: function () { return __importDefault(conditional_auth_1).default; } });
-var handlingErrors_middleware_1 = require("./handlingErrors.middleware");
+var handlingErrors_middleware_1 = require("@middlewares/handlingErrors.middleware");
 Object.defineProperty(exports, "handlingErrors", { enumerable: true, get: function () { return __importDefault(handlingErrors_middleware_1).default; } });
-var morganLogger_middleware_1 = require("./morganLogger.middleware");
+var morganLogger_middleware_1 = require("@middlewares/morganLogger.middleware");
 Object.defineProperty(exports, "morganLogger", { enumerable: true, get: function () { return __importDefault(morganLogger_middleware_1).default; } });
-exports.roles = __importStar(require("./roles.middleware"));
-var validation_middleware_1 = require("./validation.middleware");
+exports.roles = __importStar(require("@middlewares/roles.middleware"));
+var validation_middleware_1 = require("@middlewares/validation.middleware");
 Object.defineProperty(exports, "validationMiddleware", { enumerable: true, get: function () { return __importDefault(validation_middleware_1).default; } });
 //# sourceMappingURL=index.js.map

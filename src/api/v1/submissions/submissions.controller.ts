@@ -1,14 +1,15 @@
 import { NextFunction } from 'express';
 import { ObjectId } from 'mongoose';
-import { Body, CurrentUser, Get, HttpCode, JsonController, Param, Post, QueryParam, UseBefore } from 'routing-controllers';
+import { Authorized, Body, CurrentUser, Get, HttpCode, JsonController, Param, Post, QueryParam, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
-import {  conditionalAuth, validationMiddleware } from '@middlewares/index';
+import { auth, conditionalAuth } from '@middlewares/index';
 import { IUserSchema } from '@models/users.model';
 import { FormService } from '@services/v1';
 import { SubmissionService } from '@services/v1/submission.service';
-import {   ISubmission } from '@models/submission.model';
+import { ISubmission } from '@models/submission.model';
 import { SubmissionBodyDto, SubmissionDto, SubmissionParamsDto, SubmissionResponseSchema, SubmissionSummaryResponseSchema } from './dto/sumission.dto';
+import { UserRole } from '@common/types/roles';
 
 @JsonController('/v1/submissions', { transformResponse: false })
 export class SubmissionController {
@@ -19,6 +20,9 @@ export class SubmissionController {
     @HttpCode(201)
     @OpenAPI({ summary: 'Submit a form', responses: SubmissionResponseSchema })
     @ResponseSchema(ISubmission)
+    @UseBefore(auth())
+    @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
+
     //@UseBefore(validationMiddleware(SubmissionBodyDto, 'body'))
     //@UseBefore(validationMiddleware(SubmissionParamsDto, 'params'))
     @UseBefore(conditionalAuth('formId'))
@@ -71,7 +75,7 @@ export class SubmissionController {
     async getSubmissionSummary(@QueryParam('accessibility') accessibility?: string) {
         try {
             const summary = await this.submissionService.getSubmissionSummary(accessibility);
-            return {summary};
+            return { summary };
         } catch (err) {
             throw new Error('Error fetching submission summary');
         }

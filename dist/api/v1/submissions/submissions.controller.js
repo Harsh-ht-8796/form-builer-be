@@ -15,10 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubmissionController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
-const index_1 = require("../../../middlewares/index");
-const v1_1 = require("../../../services/v1");
-const submission_service_1 = require("../../../services/v1/submission.service");
-const submission_model_1 = require("../../../models/submission.model");
+const index_1 = require("@middlewares/index");
+const v1_1 = require("@services/v1");
+const submission_service_1 = require("@services/v1/submission.service");
+const submission_model_1 = require("@models/submission.model");
 const sumission_dto_1 = require("./dto/sumission.dto");
 let SubmissionController = class SubmissionController {
     constructor() {
@@ -88,9 +88,10 @@ __decorate([
     (0, routing_controllers_1.Post)('/form/:formId'),
     (0, routing_controllers_1.HttpCode)(201),
     (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Submit a form', responses: sumission_dto_1.SubmissionResponseSchema }),
-    (0, routing_controllers_openapi_1.ResponseSchema)(submission_model_1.ISubmission),
-    (0, routing_controllers_1.UseBefore)((0, index_1.validationMiddleware)(sumission_dto_1.SubmissionBodyDto, 'body')),
-    (0, routing_controllers_1.UseBefore)((0, index_1.validationMiddleware)(sumission_dto_1.SubmissionParamsDto, 'params')),
+    (0, routing_controllers_openapi_1.ResponseSchema)(submission_model_1.ISubmission)
+    //@UseBefore(validationMiddleware(SubmissionBodyDto, 'body'))
+    //@UseBefore(validationMiddleware(SubmissionParamsDto, 'params'))
+    ,
     (0, routing_controllers_1.UseBefore)((0, index_1.conditionalAuth)('formId')),
     __param(0, (0, routing_controllers_1.Param)('formId')),
     __param(1, (0, routing_controllers_1.Body)()),

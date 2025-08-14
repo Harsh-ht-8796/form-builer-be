@@ -45,14 +45,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IUser = void 0;
+exports.IRoles = exports.IUser = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const class_validator_1 = require("class-validator");
 const mongoose_1 = __importStar(require("mongoose"));
-const constants_1 = require("../common/constants");
-const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
-const roles_1 = require("../common/types/roles");
-const toJSON_plugin_1 = __importDefault(require("../utils/toJSON.plugin"));
+const constants_1 = require("@common/constants");
+const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
+const roles_1 = require("@common/types/roles");
+const toJSON_plugin_1 = __importDefault(require("@utils/toJSON.plugin"));
 class IUser extends timestamp_interface_1.default {
 }
 exports.IUser = IUser;
@@ -74,17 +74,29 @@ __decorate([
 ], IUser.prototype, "isEmailVerified", void 0);
 __decorate([
     (0, class_validator_1.IsMongoId)(),
-    __metadata("design:type", mongoose_1.Types.ObjectId)
+    __metadata("design:type", Object)
 ], IUser.prototype, "orgId", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsEnum)(roles_1.UserRole, { each: true }),
     __metadata("design:type", Array)
 ], IUser.prototype, "roles", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], IUser.prototype, "profileImage", void 0);
+class IRoles {
+}
+exports.IRoles = IRoles;
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsEnum)(roles_1.UserRole, { each: true }),
+    __metadata("design:type", Array)
+], IRoles.prototype, "roles", void 0);
 const userSchema = new mongoose_1.Schema({
     username: {
         type: String,
-        required: true,
         maxlength: 20,
         trim: true,
     },
@@ -117,6 +129,11 @@ const userSchema = new mongoose_1.Schema({
         default: [roles_1.UserRole.USER],
         required: true,
     },
+    profileImage: {
+        type: String,
+        required: false,
+        default: null
+    },
 }, {
     timestamps: true,
 });
@@ -124,6 +141,14 @@ userSchema.pre('save', async function (next) {
     const user = this;
     if (user.isModified('password') && typeof user.password === 'string') {
         user.password = await bcrypt_1.default.hash(user.password, 8);
+    }
+    next();
+});
+userSchema.pre('insertMany', async function (next, docs) {
+    for (const doc of docs) {
+        if (typeof doc.password === 'string') {
+            doc.password = await bcrypt_1.default.hash(doc.password, 8);
+        }
     }
     next();
 });

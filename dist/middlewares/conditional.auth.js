@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
-const auth_middleware_1 = __importDefault(require("./auth.middleware"));
-const form_model_1 = __importDefault(require("../models/form.model"));
+const auth_middleware_1 = __importDefault(require("@middlewares/auth.middleware"));
+const form_model_1 = __importDefault(require("@models/form.model"));
 const conditionalAuth = (compareField = 'id') => {
     return async (req, res, next) => {
         var _a;
@@ -19,7 +19,7 @@ const conditionalAuth = (compareField = 'id') => {
         if (!form) {
             return res.status(404).json({ error: 'Form not found' });
         }
-        if (((_a = form.settings) === null || _a === void 0 ? void 0 : _a.visibility) !== 'private') {
+        if (!((_a = form.settings) === null || _a === void 0 ? void 0 : _a.visibility.includes('private'))) {
             return next();
         }
         return (0, auth_middleware_1.default)()(req, res, next);

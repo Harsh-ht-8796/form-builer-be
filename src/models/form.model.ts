@@ -7,24 +7,26 @@ import ITimesStamp from '@common/interfaces/timestamp.interface';
 import { IsArray, IsBoolean, IsEmail, IsIn, IsMongoId, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-
 export class IFormSettings {
   @IsString()
-  backgroundColor!: string;
+  @IsOptional()
+  backgroundColor?: string;
 
   @IsOptional()
   @IsString()
   headerImage?: string;
 
   @IsArray()
+  @IsOptional()
   @IsString({ each: true })
-  emailNotifications!: string[];
+  emailNotifications?: string[];
 
-  @IsIn(['public', 'private', 'domain_restricted'])
-  visibility!: 'public' | 'private' | 'domain_restricted';
+  @IsArray()
+  @IsIn(['public', 'private', 'domain_restricted'], { each: true })
+  visibility!: ('public' | 'private' | 'domain_restricted')[];
 }
-export class IFormField {
 
+export class IFormField {
   @IsString()
   id!: string;
 
@@ -86,7 +88,6 @@ export class IForm extends ITimesStamp {
   @IsString({ each: true })
   allowedDomains?: string[];
 
-
   @IsOptional()
   @IsArray()
   @IsEmail({}, { each: true })
@@ -119,7 +120,6 @@ export class IForm extends ITimesStamp {
   isActive?: boolean;
 }
 
-
 export interface IFormSchema extends Document, IForm { }
 
 const formSchema = new Schema({
@@ -143,22 +143,33 @@ const formSchema = new Schema({
           "textarea",
           "text"
         ], default: 'text', required: true
-      }, // Added fieldType for compatibility with FormFieldType
+      },
       title: { type: String, required: true },
       options: [String],
       order: { type: Number, default: 0 },
       required: { type: Boolean, default: false },
     },
   ],
+  status: {
+    type: String,
+    default: ["draft"],
+    required: false
+  },
+
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   settings: {
     backgroundColor: { type: String, default: 'cyan' },
     headerImage: String,
     emailNotifications: { type: [String], default: [] },
-    visibility: { type: String, enum: ['public', 'private', 'domain_restricted'], default: 'private' },
-  },
-  isActive: { type: Boolean, default: true },
-  status: { type: String, enum: ['draft', 'published'], default: 'draft' },
-
+    visibility: {
+      type: [String], // make it an array
+      enum: ['public', 'private', 'domain_restricted'],
+      default: [], // default as an array
+    },
+  }
 }, {
   timestamps: true,
 });

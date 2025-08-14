@@ -86,7 +86,7 @@ export class OrganizationController {
   @ResponseSchema(IOrganization)
   //@UseBefore(validationMiddleware(OrganizationDto, 'body'))
   @UseBefore(auth())
-  // @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
   async update(@CurrentUser() userDetails: IUser, @Body() organizationData: Partial<IOrganization>) {
     const organization = await this.organizationService.update(userDetails.orgId, organizationData);
     if (!organization) {

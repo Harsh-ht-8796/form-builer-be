@@ -63,37 +63,50 @@ exports.FormController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
 const crypto_1 = __importDefault(require("crypto"));
-const roles_1 = require("../../../common/types/roles");
-const index_1 = require("../../../middlewares/index");
-const form_model_1 = __importStar(require("../../../models/form.model"));
-const v1_1 = require("../../../services/v1");
+const roles_1 = require("@common/types/roles");
+const index_1 = require("@middlewares/index");
+const form_model_1 = __importStar(require("@models/form.model"));
+const v1_1 = require("@services/v1");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const form_dto_1 = __importStar(require("./dtos/form.dto"));
 const form_search_dto_1 = __importDefault(require("./dtos/form-search.dto"));
 const multer_1 = __importDefault(require("./multer"));
-const is_form_exists_1 = __importDefault(require("../../../middlewares/is.form.exists"));
+const is_form_exists_1 = __importDefault(require("@middlewares/is.form.exists"));
+const class_validator_1 = require("class-validator");
 const file_type_1 = require("file-type");
+class UpdateVisibilityDto {
+}
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsIn)(['public', 'private', 'domain_restricted'], { each: true }),
+    __metadata("design:type", Array)
+], UpdateVisibilityDto.prototype, "visibility", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsEmail)({}, { each: true }),
+    __metadata("design:type", Array)
+], UpdateVisibilityDto.prototype, "allowedEmails", void 0);
 let FormController = class FormController {
     constructor() {
         this.formService = new v1_1.FormService();
     }
     async create(formData, user) {
         var _a;
-        const createdBy = (_a = user === null || user === void 0 ? void 0 : user._id) === null || _a === void 0 ? void 0 : _a.toString(); // Assuming user is attached to the request
-        const orgId = user === null || user === void 0 ? void 0 : user.orgId; // Assuming user is attached to the request
+        const createdBy = (_a = user === null || user === void 0 ? void 0 : user._id) === null || _a === void 0 ? void 0 : _a.toString();
+        const orgId = user === null || user === void 0 ? void 0 : user.orgId;
         console.log(orgId);
         const form = await this.formService.create(Object.assign(Object.assign(Object.assign({}, formData), { createdBy }), (orgId && orgId ? { orgId: orgId } : {})));
         return form;
     }
     async getAll(limit = 10, page = 0) {
-        const { docs, meta } = await this.formService.findAll({}, limit, page);
+        const { docs, meta } = await this.formService.findAll({ limit, page });
         return { docs, meta };
     }
-    async search(query) {
+    async search(query, user) {
         const { limit = 10, page = 0 } = query, rest = __rest(query, ["limit", "page"]);
         console.log('Search query:', rest);
-        const { docs, meta } = await this.formService.findAll(rest, limit, page);
+        const { docs, meta } = await this.formService.findAll({ filter: rest, limit, page, user });
         return { docs, meta };
     }
     async get(id, next) {
@@ -107,6 +120,24 @@ let FormController = class FormController {
         catch (err) {
             next(err);
         }
+    }
+    async updateVisibility(id, updateData) {
+        const form = await this.formService.getById(id);
+        if (!form) {
+            throw new Error('Form not found');
+        }
+        console.log("Form data===>", {
+            settings: Object.assign(Object.assign({}, form.settings), { visibility: updateData.visibility }),
+            allowedEmails: updateData.allowedEmails
+        });
+        const updatedForm = await this.formService.update(id, {
+            settings: Object.assign(Object.assign({}, form.settings), { visibility: updateData.visibility }),
+            allowedEmails: updateData.allowedEmails
+        });
+        if (!updatedForm) {
+            throw new Error('Form update failed');
+        }
+        return updatedForm;
     }
     async update(id, formData) {
         const form = await this.formService.update(id, formData);
@@ -161,8 +192,9 @@ __decorate([
     (0, routing_controllers_1.Post)('/'),
     (0, routing_controllers_1.HttpCode)(201),
     (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Create a new form', responses: form_dto_1.FormResponseSchema }),
-    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
-    (0, routing_controllers_1.UseBefore)((0, index_1.validationMiddleware)(form_dto_1.default, 'body')),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm)
+    //@UseBefore(validationMiddleware(FormDto, 'body'))
+    ,
     (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
     (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
     __param(0, (0, routing_controllers_1.Body)()),
@@ -190,8 +222,9 @@ __decorate([
     (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
     (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
     __param(0, (0, routing_controllers_1.QueryParams)()),
+    __param(1, (0, routing_controllers_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [form_search_dto_1.default]),
+    __metadata("design:paramtypes", [form_search_dto_1.default, Object]),
     __metadata("design:returntype", Promise)
 ], FormController.prototype, "search", null);
 __decorate([
@@ -205,10 +238,25 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], FormController.prototype, "get", null);
 __decorate([
+    (0, routing_controllers_1.Put)('/:id/update-visibility'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Update form visibility and allowed emails', responses: form_dto_1.FormResponseSchema }),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm)
+    // @UseBefore(validationMiddleware(UpdateVisibilityDto, 'body'))
+    ,
+    (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
+    (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
+    __param(0, (0, routing_controllers_1.Param)('id')),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, UpdateVisibilityDto]),
+    __metadata("design:returntype", Promise)
+], FormController.prototype, "updateVisibility", null);
+__decorate([
     (0, routing_controllers_1.Put)('/:id'),
     (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Update an existing form', responses: form_dto_1.FormResponseSchema }),
-    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
-    (0, routing_controllers_1.UseBefore)((0, index_1.validationMiddleware)(form_dto_1.default, 'body')),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm)
+    //@UseBefore(validationMiddleware(FormDto, 'body'))
+    ,
     (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
     (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
     __param(0, (0, routing_controllers_1.Param)('id')),

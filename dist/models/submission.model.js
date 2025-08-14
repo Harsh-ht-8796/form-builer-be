@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ISubmission = void 0;
 const mongoose_1 = require("mongoose");
 const class_validator_1 = require("class-validator");
-const constants_1 = require("../common/constants");
-const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
+const constants_1 = require("@common/constants");
+const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
 const form_model_1 = __importDefault(require("./form.model"));
 // Class with validation decorators
 class ISubmission extends timestamp_interface_1.default {

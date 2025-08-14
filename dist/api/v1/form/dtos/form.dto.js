@@ -168,10 +168,10 @@ __decorate([
 ], FormDto.prototype, "allowedDomains", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.IsEmail)({}, { each: true }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Array)
-], FormDto.prototype, "alowedEmails", void 0);
+], FormDto.prototype, "allowedEmails", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

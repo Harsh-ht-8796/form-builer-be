@@ -1,5 +1,3 @@
-// Form Service
-
 import { FilterQuery, ObjectId } from 'mongoose';
 
 import CRUD from '@common/interfaces/crud.interface';
@@ -15,15 +13,12 @@ export class FormService implements CRUD<IFormSchema> {
     return this.formModel.create(data);
   }
 
-
-
   async findAll(findParams: {
     filter?: FilterQuery<IFormSchema>,
     limit?: number,
     page?: number,
     user?: IUserSchema,
   }): Promise<{ docs: IFormSchema[]; meta: { totalDocs: number; totalPages: number; page: number } }> {
-
     console.log({ filter: findParams.user });
 
     const mode = findParams?.filter?.mode;
@@ -86,7 +81,7 @@ export class FormService implements CRUD<IFormSchema> {
       projection = {
         allowedDomains: { $slice: 2 },
         allowedEmails: { $slice: 2 },
-      }; // only first element
+      }; // only first two elements
     }
 
     console.log({ filter: findParams.filter, projection });
@@ -116,12 +111,25 @@ export class FormService implements CRUD<IFormSchema> {
     };
   }
 
-
   async getById(id: ObjectId): Promise<IFormSchema | null> {
     return this.formModel.findById(id, {
       allowedDomains: 0,
-      alowedEmails: 0,
+      allowedEmails: 0,
     });
+  }
+
+  async getVisibilityAndEmails(id: ObjectId): Promise<{ visibility: string[]; allowedEmails: string[] } | null> {
+    const form = await this.formModel
+      .findById(id)
+      .select('settings.visibility allowedEmails')
+      .lean();
+    if (!form) {
+      return null;
+    }
+    return {
+      visibility: form.settings?.visibility || [],
+      allowedEmails: form.allowedEmails || [],
+    };
   }
 
   async update(id: ObjectId, data: Partial<IForm>): Promise<IFormSchema | null> {

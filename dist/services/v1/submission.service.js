@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubmissionService = void 0;
-const submission_model_1 = __importDefault(require("../../models/submission.model"));
+const submission_model_1 = __importDefault(require("@models/submission.model"));
 class SubmissionService {
     constructor() {
         this.submissionModel = submission_model_1.default;

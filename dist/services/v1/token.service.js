@@ -7,9 +7,9 @@ exports.TokenService = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const moment_1 = __importDefault(require("moment"));
 const routing_controllers_1 = require("routing-controllers");
-const constants_1 = require("../../common/constants");
-const _config_1 = require("../../config");
-const tokens_model_1 = __importDefault(require("../../models/tokens.model"));
+const constants_1 = require("@common/constants");
+const _config_1 = require("@config");
+const tokens_model_1 = __importDefault(require("@models/tokens.model"));
 const user_service_1 = require("./user.service");
 class TokenService {
     constructor() {

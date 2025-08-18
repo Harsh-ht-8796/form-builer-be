@@ -123,8 +123,8 @@ export class IForm extends ITimesStamp {
 export interface IFormSchema extends Document, IForm { }
 
 const formSchema = new Schema({
-  orgId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  orgId: { type: Schema.Types.ObjectId, ref: MODELS.ORGANIZATIONS, required: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: MODELS.USERS, required: true },
   coverImage: { type: String, default: '' },
   logoImage: { type: String, default: '' },
   title: { type: String, default: '' },

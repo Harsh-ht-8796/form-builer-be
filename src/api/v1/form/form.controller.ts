@@ -70,6 +70,17 @@ export class FormController {
     return { docs, meta };
   }
 
+  @Get('/received')
+  @OpenAPI({ summary: 'Get all forms', responses: FormResponseSchema })
+  @ResponseSchema(IForm)
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole])
+  async getAllUserReceivedForm(@CurrentUser() userDetails: IUserSchema, @QueryParams() query: FormSearchDto) {
+    const { limit, page, ...rest } = query;
+
+    const { docs, meta } = await this.formService.findAllReceivedForm({ filter: rest, limit, page, user: userDetails });
+    return { docs, meta };
+  }
   @Get('/:id')
   @OpenAPI({ summary: 'Get a form by ID', responses: FormResponseSchema })
   @ResponseSchema(IForm)

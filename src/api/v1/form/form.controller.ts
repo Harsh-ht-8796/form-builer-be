@@ -97,19 +97,26 @@ export class FormController {
     if (!form) {
       throw new Error('Form not found');
     }
+    const allowedVisibilyStatus = ["public", "private", "domain_restricted"];
 
+    const isPublished = allowedVisibilyStatus.some((status: "public" | "private" | "domain_restricted") => {
+      return updateData.visibility.includes(status);
+    });
     console.log("Form data===>", {
       settings: {
         ...form.settings,
-        visibility: updateData.visibility
+        visibility: updateData.visibility,
+        status: isPublished ? "published" : "draft"
       },
       allowedEmails: updateData.allowedEmails
     })
     const updatedForm = await this.formService.update(id, {
       settings: {
         ...form.settings,
-        visibility: updateData.visibility
+        visibility: updateData.visibility,
+
       },
+      status: isPublished ? "published" : "draft",
       allowedEmails: updateData.allowedEmails
     });
     if (!updatedForm) {

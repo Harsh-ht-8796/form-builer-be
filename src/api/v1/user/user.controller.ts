@@ -56,7 +56,6 @@ export class UserController {
   @ResponseSchema(IUser)
   @Authorized([UserRole.SUPER_ADMIN])
   async getCurrentUser(@CurrentUser() userDetaills: IUserSchema) {
-    console.log({ id: userDetaills.id })
     const user = await this.userService.getById(userDetaills.id);
     return user;
   }
@@ -126,7 +125,6 @@ export class UserController {
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
   async deleteProfileImage(@CurrentUser() user: IUserSchema) {
     // 1. Find user in DB
-    console.log({ id: user.id })
     const userDoc = await usersModel.findById(user.id)
     if (!userDoc || !userDoc.profileImage) {
       throw new BadRequestError('No profile image found to delete');
@@ -173,7 +171,6 @@ export class UserController {
   })
   @ResponseSchema(IUser)
   async updateUser(@CurrentUser() userDetaills: IUserSchema, @Body() updateBody: Partial<IUser>) {
-    console.log({ updateBody })
     const user = await this.userService.updateById(userDetaills.id, updateBody);
     return { user };
   }
@@ -213,7 +210,6 @@ export class UserController {
       const hash = crypto.createHash('sha256').update(buffer).digest('hex');
 
       result[`${key}Url`] = `/uploads/${file.filename}`;
-      console.log({ key })
       const updatedForm = await usersModel.updateOne({ _id: user.id }, { [`${key}`]: `/uploads/${file.filename}` });
       console.log({ updatedForm })
       result[`${key}Hash`] = hash;
@@ -230,7 +226,6 @@ export class UserController {
     @Body() userData: ChangePasswordDto,
     @CurrentUser() currentUser: IUserSchema
   ) {
-    console.log({ id: currentUser.id })
     return await this.userService.changePassword(
       currentUser.id,
       userData.oldPassword,

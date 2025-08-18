@@ -61,7 +61,6 @@ export class OrganizationController {
   async mapTouser(@Body() organizationData: OrganizationDto, @CurrentUser() user: IUserSchema) {
     const createdBy = user?._id?.toString();
     const mappedOrgWithUser = await this.organizationService.mapToUser({ ...organizationData, createdBy });
-    console.log({ mappedOrgWithUser });
     return mappedOrgWithUser;
   }
 

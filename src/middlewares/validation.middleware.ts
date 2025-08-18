@@ -22,8 +22,6 @@ const validationMiddleware = (
   forbidNonWhitelisted = true,
 ): RequestHandler => {
 
-  console.log("type======>", type);
-  console.log("value======>", value);
   return (req, res, next) => {
 
     const dataToValidate =
@@ -32,7 +30,6 @@ const validationMiddleware = (
           value === 'params' ? req.params :
             undefined;
 
-    console.log("dataToValidate======>", dataToValidate);
     if (!dataToValidate) {
       return next(new HttpException(400, 'Invalid request target'));
     }

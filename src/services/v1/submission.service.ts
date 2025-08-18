@@ -8,7 +8,6 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
     private readonly submissionModel = Submission;
 
     async create(data: SubmissionDto): Promise<ISubmissionSchema> {
-        console.log('Creating submission with data:', data);
         return this.submissionModel.create(data);
     }
 

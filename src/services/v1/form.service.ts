@@ -20,7 +20,6 @@ export class FormService implements CRUD<IFormSchema> {
     page?: number,
     user?: IUserSchema,
   }): Promise<{ docs: IFormSchema[]; meta: { totalDocs: number; totalPages: number; page: number } }> {
-    console.log({ filter: findParams.user });
 
     const mode = findParams?.filter?.mode;
 
@@ -85,7 +84,6 @@ export class FormService implements CRUD<IFormSchema> {
       }; // only first two elements
     }
 
-    console.log({ filter: findParams.filter, projection });
 
     const totalDocs = await this.formModel.countDocuments(findParams.filter);
     const docs = await this.formModel
@@ -152,7 +150,6 @@ export class FormService implements CRUD<IFormSchema> {
     page?: number,
     user?: IUserSchema,
   }): Promise<{ docs: IFormSchema[]; meta: { totalDocs: number; totalPages: number; page: number } }> {
-    console.log({ filter: findParams.user });
 
 
     // Title search
@@ -222,7 +219,6 @@ export class FormService implements CRUD<IFormSchema> {
       isActive: 1
     }; // only first two elements
 
-    console.log({ filter: findParams.filter, projection });
 
     const totalDocs = await this.formModel.countDocuments(findParams.filter);
     const docs = await this.formModel

@@ -9,6 +9,7 @@ const conditionalAuth = (compareField = 'id') => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params[compareField];
     const objectId = Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : null;
+
     if (!objectId || !Types.ObjectId.isValid(objectId)) {
       return res.status(400).json({ error: 'Invalid ID format' });
     }
@@ -60,7 +61,7 @@ const conditionalAuth = (compareField = 'id') => {
         // Handle private visibility: check if user email is in allowedEmails
         if (form.settings?.visibility?.includes('private')) {
           if (!form.allowedEmails?.includes(userEmail)) {
-            return res.status(403).json({ error: 'Access denied: Email not in allowed list' });
+            return res.status(401).json({ error: 'Access denied: Email not in allowed list' });
           }
           return next();
         }

@@ -84,6 +84,23 @@ export class FormController {
   @Get('/:id')
   @OpenAPI({ summary: 'Get a form by ID', responses: FormResponseSchema })
   @ResponseSchema(IForm)
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole])
+  async getUserForm(@Param('id') id: ObjectId, next: NextFunction) {
+    try {
+      const form = await this.formService.getById(id);
+      if (!form) {
+        throw new Error('Form not found');
+      }
+      return form;
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  @Get('/:id/user-view')
+  @OpenAPI({ summary: 'Get a form by ID', responses: FormResponseSchema })
+  @ResponseSchema(IForm)
   @UseBefore(conditionalAuth())
   async get(@Param('id') id: ObjectId, next: NextFunction) {
     try {

@@ -10,79 +10,69 @@ const conditionalAuth = (compareField = 'id') => {
     const id = req.params[compareField];
     const objectId = Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : null;
 
-    if (!objectId || !Types.ObjectId.isValid(objectId)) {
+    if (!objectId) {
       return res.status(400).json({ error: 'Invalid ID format' });
     }
 
-    const form = await FormModel.findById(objectId).lean();
-    console.log('Conditional :', objectId);
+    // Fetch form with only needed fields
+    const form = await FormModel.findById(objectId, {
+      settings: 1,
+      allowedEmails: 1,
+      allowedDomains: 1,
+    }).lean();
+
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
     }
 
-    // Allow public forms to bypass authentication
-    if (form.settings?.visibility?.includes('public')) {
+    // PUBLIC: query check
+    if (await FormModel.exists({ _id: objectId, 'settings.visibility': 'public' })) {
       return next();
     }
 
-    // For private or domain_restricted, verify JWT token
+    // Require auth for private/domain_restricted
     return auth()(req, res, async (err) => {
-      if (err) {
-        return next(err); // Pass authentication errors (e.g., 401 Unauthorized)
-      }
+      if (err) return next(err);
 
-      // Token is verified, user is attached to req.user by auth middleware
       const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Invalid or missing Authorization header' });
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing Authorization header' });
       }
 
       const token = authHeader.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
-      }
-
-      try {
-        // Decode JWT token to get sub (user ID)
-        const decoded = jwt.decode(token) as { sub?: string };
-        if (!decoded?.sub || !Types.ObjectId.isValid(decoded.sub)) {
-          return res.status(401).json({ error: 'Invalid token: No sub found' });
-        }
-        const userId = decoded.sub;
-
-        // Fetch user from User collection using sub (_id)
-        const user = await usersModel.findById(userId).lean();
-        if (!user || !user.email) {
-          return res.status(401).json({ error: 'User not found or no email associated' });
-        }
-        const userEmail = user.email;
-        console.log({ userEmail });
-
-        // Handle private visibility: check if user email is in allowedEmails
-        if (form.settings?.visibility?.includes('private')) {
-          if (!form.allowedEmails?.includes(userEmail)) {
-            return res.status(401).json({ error: 'Access denied: Email not in allowed list' });
-          }
-          return next();
-        }
-
-        // Handle domain_restricted visibility: check if email domain matches allowedDomains
-        if (form.settings?.visibility?.includes('domain_restricted')) {
-          const userDomain = userEmail.split('@')[1]?.toLowerCase();
-          if (!userDomain || !form.allowedDomains?.some(domain => domain.toLowerCase() === userDomain)) {
-            return res.status(403).json({ error: 'Access denied: Email domain not allowed' });
-          }
-          return next();
-        }
-
-        // If visibility is neither public, private, nor domain_restricted
-        return res.status(403).json({ error: 'Access denied: Invalid visibility settings' });
-      } catch (error) {
-        console.error('Token processing error:', error);
+      const decoded = jwt.decode(token) as { sub?: string };
+      if (!decoded?.sub || !Types.ObjectId.isValid(decoded.sub)) {
         return res.status(401).json({ error: 'Invalid token' });
       }
+
+      const user = await usersModel.findById(decoded.sub).lean();
+      if (!user?.email) {
+        return res.status(401).json({ error: 'User not found or no email' });
+      }
+
+      const userEmail = user.email;
+      const userDomain = userEmail.split('@')[1]?.toLowerCase();
+
+      // PRIVATE: use query with $in
+      const privateAllowed = await FormModel.exists({
+        _id: objectId,
+        'settings.visibility': 'private',
+        allowedEmails: userEmail,
+      });
+      if (privateAllowed) return next();
+
+      // DOMAIN_RESTRICTED: use query with $in
+      const domainAllowed = await FormModel.exists({
+        _id: objectId,
+        'settings.visibility': 'domain_restricted',
+        allowedDomains: { $in: [userDomain] },
+      });
+      if (domainAllowed) return next();
+
+      return res.status(403).json({ error: 'Access denied' });
     });
   };
 };
+
 
 export default conditionalAuth;

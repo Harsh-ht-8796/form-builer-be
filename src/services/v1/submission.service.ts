@@ -86,12 +86,13 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
                 $project: {
                     formId: '$_id',
                     responseCount: 1,
-                    formName: '$form.title',
+                    formName: '$form.title', // 👈 put this last
                 },
             },
         ];
 
-        const summary = this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
-        return summary
+        const summary = await this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
+        return summary;
     }
+
 }

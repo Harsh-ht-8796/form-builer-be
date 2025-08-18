@@ -91,7 +91,7 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
             },
         ];
 
-        const summary = await this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
+        const summary = this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
         return summary;
     }
 

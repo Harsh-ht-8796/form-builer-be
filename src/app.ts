@@ -83,7 +83,7 @@ export default class App {
     // if (isProduction) {
     //   this.app.use(Sentry.Handlers.errorHandler() as ErrorRequestHandler);
     // }
-    this.app.use(handlingErrorsMiddleware);
+    this.app.use(handlingErrorsMiddleware as ErrorRequestHandler);
   }
 
   static async initDB() {
@@ -96,7 +96,6 @@ export default class App {
 
   public initWebServer = async () => {
     return new Promise(resolve => {
-      console.log(`✅ http://localhost:${this.port}`);
       this.serverConnection = this.app.listen(this.port, () => {
         console.log(`✅  Ready on port http://localhost:${this.port}`);
         resolve(this.serverConnection?.address());
@@ -105,12 +104,10 @@ export default class App {
   };
 
   public initServerWithDB = async () => {
-    console.log("Called initServerDB")
     await Promise.all([App.initDB(), this.initWebServer()]);
   };
 
   public stopWebServer = async () => {
-    console.log("Called stopWebServer")
     return new Promise(resolve => {
       this.serverConnection?.close(() => {
         resolve(void 0);

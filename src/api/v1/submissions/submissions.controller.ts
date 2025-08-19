@@ -9,6 +9,8 @@ import { SubmissionService } from '@services/v1/submission.service';
 import { ISubmission } from '@models/submission.model';
 import { SubmissionBodyDto, SubmissionDto, SubmissionParamsDto, SubmissionResponseSchema, SubmissionSummaryResponseSchema } from './dto/sumission.dto';
 import conditionalAuth from '@middlewares/conditional.auth';
+import auth from '@middlewares/auth.middleware';
+import { UserRole } from '@common/types/roles';
 
 @JsonController('/v1/submissions', { transformResponse: false })
 export class SubmissionController {
@@ -67,15 +69,27 @@ export class SubmissionController {
 
     @Get('/summary')
     @OpenAPI({ summary: 'Get submission summary', responses: SubmissionSummaryResponseSchema })
+    @UseBefore(auth())
+    @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
     @ResponseSchema(ISubmission)
-    async getSubmissionSummary(@QueryParam('accessibility') accessibility?: string) {
+    async getSubmissionSummary(
+        @CurrentUser() userDetails: IUserSchema,
+        @QueryParam('accessibility') accessibility?: string,
+        @QueryParam('title') titleSearch?: string, // 👈 new query param
+    ) {
         try {
-            const summary = await this.submissionService.getSubmissionSummary(accessibility);
+            const summary = await this.submissionService.getSubmissionSummary(
+                userDetails,
+                accessibility,
+                titleSearch // 👈 pass down
+            );
             return { summary };
         } catch (err) {
+            console.error(err);
             throw new Error('Error fetching submission summary');
         }
     }
+
     @Get('/form/:formId')
     @OpenAPI({ summary: 'Get submissions by form ID', responses: SubmissionResponseSchema })
     @ResponseSchema(ISubmission, { isArray: true })

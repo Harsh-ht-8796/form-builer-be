@@ -1,8 +1,9 @@
-import { FilterQuery, ObjectId } from 'mongoose';
+import { FilterQuery, ObjectId, Types } from 'mongoose';
 
 import CRUD from '@common/interfaces/crud.interface';
 import Submission, { IGetSubmissionSummary, ISubmissionSchema } from '@models/submission.model';
 import { SubmissionDto } from '@v1/submissions/dto/sumission.dto';
+import { IUserSchema } from '@models/users.model';
 
 export class SubmissionService implements CRUD<ISubmissionSchema> {
     private readonly submissionModel = Submission;
@@ -59,40 +60,58 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
         return this.submissionModel.findByIdAndDelete(id);
     }
 
-    async getSubmissionSummary(accessibility?: string) {
-        const pipeline = [
-            ...(accessibility ? [{ $match: { accessibility } }] : []),
-            {
-                $group: {
-                    _id: '$formId',
-                    responseCount: { $sum: 1 },
-                },
+async getSubmissionSummary(
+  userDetails: IUserSchema,
+  accessibility?: string,
+  titleSearch?: string
+) {
+  const pipeline: any[] = [
+    ...(accessibility ? [{ $match: { accessibility } }] : []),
+    {
+      $group: {
+        _id: {
+          formId: '$formId',
+          accessibility: '$accessibility',
+        },
+        responseCount: { $sum: 1 },
+      },
+    },
+    {
+      $lookup: {
+        from: 'forms',
+        let: { formId: '$_id.formId' }, // Adjusted to reference grouped formId
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$_id', '$$formId'] },
+                  { $eq: ['$orgId', userDetails.orgId] },
+                ],
+              },
+              ...(titleSearch
+                ? { title: { $regex: titleSearch, $options: 'i' } }
+                : {}),
             },
-            {
-                $lookup: {
-                    from: 'forms',
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'form',
-                },
-            },
-            {
-                $unwind: {
-                    path: '$form',
-                    preserveNullAndEmptyArrays: true,
-                },
-            },
-            {
-                $project: {
-                    formId: '$_id',
-                    responseCount: 1,
-                    formName: '$form.title', // 👈 put this last
-                },
-            },
-        ];
+          },
+          { $project: { title: 1 } }, // Keep projection light
+        ],
+        as: 'form',
+      },
+    },
+    { $unwind: { path: '$form', preserveNullAndEmptyArrays: false } },
+    {
+      $project: {
+        formId: '$_id.formId',
+        accessibility: '$_id.accessibility', // Include accessibility in output
+        responseCount: 1,
+        formName: '$form.title',
+      },
+    },
+  ];
 
-        const summary = this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
-        return summary;
-    }
+  return this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
+}
+
 
 }

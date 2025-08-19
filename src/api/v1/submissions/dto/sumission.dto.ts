@@ -1,5 +1,4 @@
-import { IsMongoId, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
-import { isString } from 'lodash';
+import { IsEnum, IsMongoId, IsNotEmpty, IsObject, IsOptional, IsString, Matches } from 'class-validator';
 import { ObjectId } from 'mongoose';
 
 // OpenAPI response schema for submission operations
@@ -131,4 +130,38 @@ export class SubmissionDto extends SubmissionBaseDto {
   @IsMongoId()
   @IsNotEmpty()
   formId!: ObjectId;
+}
+
+// Define the accessibility enum for validation
+export enum GetApiV1SubmissionsSummaryAccessibility {
+  PUBLIC = 'public',
+  PRIVATE = 'private',
+}
+
+
+// DTO for submission summary query parameters
+export class SubmissionSummaryQueryDto {
+  @IsOptional()
+  @IsEnum(GetApiV1SubmissionsSummaryAccessibility, {
+    message: 'accessibility must be one of: public, private, all',
+  })
+  accessibility?: GetApiV1SubmissionsSummaryAccessibility;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{2}-\d{2}-\d{4}$/, {
+    message: 'fromDate must be in DD-MM-YYYY format',
+  })
+  fromDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{2}-\d{2}-\d{4}$/, {
+    message: 'toDate must be in DD-MM-YYYY format',
+  })
+  toDate?: string;
 }

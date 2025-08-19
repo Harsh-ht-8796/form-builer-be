@@ -1,13 +1,32 @@
 import { NextFunction } from 'express';
 import { ObjectId } from 'mongoose';
-import { Authorized, Body, CurrentUser, Get, HttpCode, JsonController, Param, Post, QueryParam, UseBefore } from 'routing-controllers';
+import {
+    Authorized,
+    Body,
+    CurrentUser,
+    Get,
+    HttpCode,
+    JsonController,
+    Param,
+    Post,
+    QueryParam,
+    QueryParams,
+    UseBefore,
+} from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { IUserSchema } from '@models/users.model';
 import { FormService } from '@services/v1';
 import { SubmissionService } from '@services/v1/submission.service';
 import { ISubmission } from '@models/submission.model';
-import { SubmissionBodyDto, SubmissionDto, SubmissionParamsDto, SubmissionResponseSchema, SubmissionSummaryResponseSchema } from './dto/sumission.dto';
+import {
+    SubmissionBodyDto,
+    SubmissionDto,
+    SubmissionParamsDto,
+    SubmissionResponseSchema,
+    SubmissionSummaryResponseSchema,
+    SubmissionSummaryQueryDto,
+} from './dto/sumission.dto';
 import conditionalAuth from '@middlewares/conditional.auth';
 import auth from '@middlewares/auth.middleware';
 import { UserRole } from '@common/types/roles';
@@ -31,11 +50,11 @@ export class SubmissionController {
         next?: NextFunction
     ) {
         try {
-            console.log('Submitting form with ID:', formId, 'and data:', submissionData);
+            console.log('Submitting form withID:', formId, 'and data:', submissionData);
             const submissionPayload: SubmissionDto = {
                 ...submissionData,
                 formId,
-                ...(user && user._id ? { submittedBy: user._id as ObjectId } : {})
+                ...(user && user._id ? { submittedBy: user._id as ObjectId } : {}),
             };
             const submission = await this.submissionService.create(submissionPayload);
 
@@ -44,7 +63,11 @@ export class SubmissionController {
                 throw new Error('Form not found');
             }
 
-            if (form?.settings && form?.settings?.emailNotifications && form?.settings?.emailNotifications?.length > 0) {
+            if (
+                form?.settings &&
+                form?.settings?.emailNotifications &&
+                form?.settings?.emailNotifications?.length > 0
+            ) {
                 const emailData = {
                     to: form?.settings?.emailNotifications,
                     subject: `New submission for form ${form._id}`,
@@ -74,14 +97,12 @@ export class SubmissionController {
     @ResponseSchema(ISubmission)
     async getSubmissionSummary(
         @CurrentUser() userDetails: IUserSchema,
-        @QueryParam('accessibility') accessibility?: string,
-        @QueryParam('title') titleSearch?: string, // 👈 new query param
+        @QueryParams() query: SubmissionSummaryQueryDto
     ) {
         try {
             const summary = await this.submissionService.getSubmissionSummary(
                 userDetails,
-                accessibility,
-                titleSearch // 👈 pass down
+                query
             );
             return { summary };
         } catch (err) {
@@ -96,10 +117,8 @@ export class SubmissionController {
     @UseBefore(conditionalAuth())
     async getSubmissions(
         @Param('formId') formId: ObjectId,
-        // @QueryParam('filter') filter?: string,
         @QueryParam('limit') limit?: number,
-        @QueryParam('skip') skip?: number,
-        // @QueryParam('sort') sort?: string
+        @QueryParam('skip') skip?: number
     ) {
         return this.submissionService.findSubmissionsByFormId(formId, { limit, page: skip });
     }
@@ -119,6 +138,4 @@ export class SubmissionController {
             next(err);
         }
     }
-
-
 }

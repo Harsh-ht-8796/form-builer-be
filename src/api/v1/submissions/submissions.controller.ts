@@ -22,7 +22,6 @@ import { ISubmission } from '@models/submission.model';
 import {
     SubmissionBodyDto,
     SubmissionDto,
-    SubmissionParamsDto,
     SubmissionResponseSchema,
     SubmissionSummaryResponseSchema,
     SubmissionSummaryQueryDto,
@@ -54,7 +53,7 @@ export class SubmissionController {
             const submissionPayload: SubmissionDto = {
                 ...submissionData,
                 formId,
-                ...(user && user._id ? { submittedBy: user._id as ObjectId } : {}),
+                ...(user && user._id ? { submittedBy: user._id as ObjectId, orgId: user.orgId as ObjectId } : {}),
             };
             const submission = await this.submissionService.create(submissionPayload);
 
@@ -109,6 +108,15 @@ export class SubmissionController {
             console.error(err);
             throw new Error('Error fetching submission summary');
         }
+    }
+
+
+    @Get("/overview-cards")
+    @UseBefore(auth())
+    @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
+    async getOverViewCard(@CurrentUser() userDetails: IUserSchema) {
+        const overviewCards = await this.submissionService.getOverViewCard(userDetails)
+        return { overviewCards }
     }
 
     @Get('/form/:formId')

@@ -5,9 +5,13 @@ import Submission, { IGetSubmissionSummary, ISubmissionSchema } from '@models/su
 import { SubmissionDto, SubmissionSummaryQueryDto } from '@v1/submissions/dto/sumission.dto';
 import { IUserSchema } from '@models/users.model';
 import moment from 'moment';
+import formModel from '@models/form.model';
 
 export class SubmissionService implements CRUD<ISubmissionSchema> {
   private readonly submissionModel = Submission;
+  private readonly formModel = formModel;
+
+
 
   async create(data: SubmissionDto): Promise<ISubmissionSchema> {
     return this.submissionModel.create(data);
@@ -127,6 +131,83 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
     ];
 
     return this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
+  }
+
+  async getOverViewCard(userDetails: IUserSchema) {
+    // Fetch total number of forms for the user's organization
+    const allFormCount = await this.formModel.countDocuments({
+      orgId: userDetails.orgId,
+    });
+
+    // Fetch total number of submissions for the user's organization
+    const totalResponse = await this.submissionModel.countDocuments({
+      orgId: userDetails.orgId,
+    });
+
+    // Calculate average completion rate for private forms
+    let avgCompletionRate = "0%";
+    const privateForms = await this.formModel.countDocuments({
+      orgId: userDetails.orgId,
+      'settings.visibility': { $in: ['private'] },
+      status: 'published', // Only consider published forms
+    });
+
+    if (privateForms > 0) {
+      const privateFormSubmissions = await this.submissionModel.countDocuments({
+        orgId: userDetails.orgId,
+        accessibility: 'private',
+      });
+
+      // Calculate completion rate: (submissions for private forms / private forms)
+      // Assuming each form expects at least one submission for completion
+      const completionRate = (privateFormSubmissions / privateForms) * 100;
+      avgCompletionRate = `${Math.round(completionRate)}%`;
+    }
+
+    // Optional: Calculate percentage change (e.g., week-over-week) for forms and responses
+    // For simplicity, let's assume we compare with the previous week's data
+    const oneWeekAgo = moment().subtract(7, 'days').toDate();
+
+    const recentForms = await this.formModel.countDocuments({
+      orgId: userDetails.orgId,
+      createdAt: { $gte: oneWeekAgo },
+    });
+    const previousForms = await this.formModel.countDocuments({
+      orgId: userDetails.orgId,
+      createdAt: { $lt: oneWeekAgo },
+    });
+    const formGrowth = previousForms > 0 ? ((recentForms / previousForms) * 100).toFixed(1) : "0.0";
+
+    const recentResponses = await this.submissionModel.countDocuments({
+      orgId: userDetails.orgId,
+      submittedAt: { $gte: oneWeekAgo },
+    });
+    const previousResponses = await this.submissionModel.countDocuments({
+      orgId: userDetails.orgId,
+      submittedAt: { $lt: oneWeekAgo },
+    });
+    const responseGrowth = previousResponses > 0 ? ((recentResponses / previousResponses) * 100).toFixed(1) : "0.0";
+
+    return [
+      {
+        label: "Total Forms",
+        value: allFormCount,
+        percentage: `${formGrowth}%`, // Week-over-week growth
+        id: "total_form",
+      },
+      {
+        label: "Total Responses",
+        value: totalResponse,
+        percentage: `${responseGrowth}%`, // Week-over-week growth
+        id: "total_response",
+      },
+      {
+        label: "Avg. Completion Rate (Private)",
+        value: avgCompletionRate,
+        percentage: "N/A", // No growth metric for completion rate
+        id: "avg_completion_rate_private",
+      },
+    ];
   }
 
 

@@ -1,4 +1,4 @@
-import { Document, model, Query, Schema, Types } from 'mongoose';
+import { Document, model, ObjectId, Query, Schema, Types } from 'mongoose';
 import { IsDate, IsMongoId, IsObject, IsOptional, IsString } from 'class-validator';
 
 import { MODELS } from '@common/constants';
@@ -32,7 +32,11 @@ export class ISubmission extends ITimesStamp {
 
   @IsOptional()
   @IsMongoId()
-  submittedBy?: Types.ObjectId;
+  submittedBy?: ObjectId;
+
+  @IsOptional()
+  @IsMongoId()
+  orgId?: ObjectId;
 }
 
 // Extend Document to use with Mongoose
@@ -41,11 +45,17 @@ export interface ISubmissionSchema extends Document, ISubmission { }
 // Mongoose schema
 const submissionSchema = new Schema<ISubmissionSchema>(
   {
-    formId: { type: Schema.Types.ObjectId, ref: 'Form', required: true },
+    formId: { type: Schema.Types.ObjectId, ref: MODELS.FORMS, required: true },
     submittedAt: { type: Date, default: Date.now },
+    orgId: {
+      type: Schema.Types.ObjectId,
+      default: null,
+      required: false,
+      ref: MODELS.ORGANIZATIONS
+    },
     data: { type: Schema.Types.Mixed, required: true },
     accessibility: { type: String, default: 'public' },
-    submittedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    submittedBy: { type: Schema.Types.ObjectId, ref: MODELS.USERS },
   },
   {
     timestamps: true,

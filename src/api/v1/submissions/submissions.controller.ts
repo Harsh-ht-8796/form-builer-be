@@ -25,6 +25,7 @@ import {
     SubmissionResponseSchema,
     SubmissionSummaryResponseSchema,
     SubmissionSummaryQueryDto,
+    SubmissionSummaryQueryIndivialDto,
 } from './dto/sumission.dto';
 import conditionalAuth from '@middlewares/conditional.auth';
 import auth from '@middlewares/auth.middleware';
@@ -119,6 +120,30 @@ export class SubmissionController {
         return { overviewCards }
     }
 
+    @Get('/:id/individual')
+    @OpenAPI({ summary: 'Get a submission by ID', responses: SubmissionResponseSchema })
+    @ResponseSchema(ISubmission)
+    async getSubmissionByFormId(
+        @Param("id") id: ObjectId,
+        @QueryParams() query: SubmissionSummaryQueryIndivialDto
+    ) {
+
+        const { limit, page } = query
+        try {
+            const submission = await this.submissionService.findAll({
+                formId: id
+            }, Number(limit),
+                Number(page));
+            if (!submission) {
+                throw new Error('Submission not found');
+            }
+            return submission;
+        } catch (err) {
+
+            throw new Error('Submission something goes wrong');
+        }
+    }
+
     @Get('/form/:formId')
     @OpenAPI({ summary: 'Get submissions by form ID', responses: SubmissionResponseSchema })
     @ResponseSchema(ISubmission, { isArray: true })
@@ -130,6 +155,8 @@ export class SubmissionController {
     ) {
         return this.submissionService.findSubmissionsByFormId(formId, { limit, page: skip });
     }
+
+
 
     @Get('/:id')
     @OpenAPI({ summary: 'Get a submission by ID', responses: SubmissionResponseSchema })

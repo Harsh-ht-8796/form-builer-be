@@ -165,3 +165,16 @@ export class SubmissionSummaryQueryDto {
   })
   toDate?: string;
 }
+
+
+export class SubmissionSummaryQueryIndivialDto {
+
+  @IsOptional()
+  @IsString()
+  page?: string
+
+  @IsOptional()
+  @IsString()
+  limit?: string
+
+}

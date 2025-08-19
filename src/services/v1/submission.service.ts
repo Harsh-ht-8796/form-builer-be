@@ -21,7 +21,7 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
     filter: FilterQuery<ISubmissionSchema> = {},
     limit = 10,
     page = 0
-  ): Promise<{ docs: ISubmissionSchema[]; meta: { totalDocs: number; totalPages: number; page: number } }> {
+  ): Promise<{ docs: ISubmissionSchema[]; meta: { totalDocs: number; totalPages: number; page: number, limit: number } }> {
     const totalDocs = await this.submissionModel.countDocuments(filter);
     const docs = await this.submissionModel
       .find(filter)
@@ -36,6 +36,7 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
         totalDocs,
         totalPages: Math.ceil(totalDocs / limit) || 0,
         page,
+        limit
       },
     };
   }

@@ -359,22 +359,25 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
       const formattedSubmissions = submissions.map(submission => ({
         submissionId: submission._id,
         submittedAt: submission.submittedAt,
-        answers: [{
-          question: fieldTitle,
-          answer: submission.data[fieldId],
-          fieldId,
-        }],
+        answer: submission.data[fieldId]
+
       }));
 
       return {
-        submissions: formattedSubmissions,
+        results: formattedSubmissions,
+        field: {
+          id: fieldId,
+          title: fieldTitle,
+          type: field.type,
+          options: field.options,
+        },
         meta: {
           totalSubmissions,
           totalPages: Math.ceil(form.fields.length / limit) || 0,
           page: page ?? 0,
           limit: Math.min(limit, 100),
         },
-      } as SubmissionAnswersResponse;
+      };
     }
 
     // Original logic for fields with options (e.g., multiple-choice)
@@ -441,7 +444,6 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
       meta: {
         totalSubmissions: submissions.length,
         totalPages: Math.ceil(form.fields.length / limit) || 0,
-        fieldIndex: page,
         page: page ?? 0,
         limit: limit
       },

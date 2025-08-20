@@ -249,4 +249,23 @@ export class SubmissionController {
     }
 
 
+    @Get('/form/:formId/field/:fieldId/answers')
+    @OpenAPI({ summary: 'Get answers for a specific form field by formId and fieldId', responses: FieldResponseSchema })
+    @ResponseSchema(IFormField, { isArray: true })
+    @UseBefore(auth())
+    @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN])
+    async getFieldAnswersByFieldId(
+        @Param('formId') formId: ObjectId,
+        @Param('fieldId') fieldId: string,
+        @QueryParams() query: FieldQueryDto,
+    ) {
+        try {
+            const result = await this.submissionService.getFieldAnswersByFieldId(formId, fieldId, query);
+            return result;
+        } catch (err) {
+            return { message: 'Something went wrong' };
+        }
+    }
+
+
 }

@@ -1,7 +1,7 @@
 import { FilterQuery, ObjectId, Types } from 'mongoose';
 import CRUD from '@common/interfaces/crud.interface';
 import Submission, { IGetSubmissionSummary, ISubmissionSchema } from '@models/submission.model';
-import { FieldQueryDto, SubmissionDto, SubmissionSummaryQueryDto } from '@v1/submissions/dto/sumission.dto';
+import { FieldQueryByIdDto, FieldQueryDto, SubmissionDto, SubmissionSummaryQueryDto } from '@v1/submissions/dto/sumission.dto';
 import { IUserSchema } from '@models/users.model';
 import moment from 'moment';
 import formModel from '@models/form.model';
@@ -446,6 +446,126 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
         totalPages: Math.ceil(form.fields.length / limit) || 0,
         page: page ?? 0,
         limit: limit
+      },
+    };
+  }
+
+
+  async getFieldAnswersByFieldId(formId: ObjectId, fieldId: string, query: FieldQueryByIdDto) {
+
+    // Validate formId
+    const form = await this.formModel.findById(formId).lean();
+    if (!form) {
+      throw new Error('Form not found');
+    }
+
+    // Find the specific field by fieldId
+    const field = form.fields.find((f: any) => f.id === fieldId);
+    if (!field) {
+      throw new Error('Field not found');
+    }
+
+    const fieldTitle = field.title;
+
+    // If field type is short-text or long-text, fetch submissions with pagination
+    if (field.type === 'short-text' || field.type === 'long-text') {
+      const totalSubmissions = await this.submissionModel.countDocuments({
+        formId,
+        [`data.${fieldId}`]: { $exists: true },
+      });
+
+      const submissions = await this.submissionModel
+        .find({
+          formId,
+          [`data.${fieldId}`]: { $exists: true },
+        })
+        .populate({
+          path: 'submittedBy',
+          select: 'email _id',
+        })
+        .sort({ submittedAt: -1 })
+        .lean();
+
+      const formattedSubmissions = submissions.map(submission => ({
+        submissionId: submission._id,
+        submittedAt: submission.submittedAt,
+        answer: submission.data[fieldId],
+      }));
+
+      return {
+        results: formattedSubmissions,
+        field: {
+          id: fieldId,
+          title: fieldTitle,
+          type: field.type,
+          options: field.options,
+        },
+        meta: {
+          totalSubmissions
+        },
+      };
+    }
+
+    // Logic for fields with options (e.g., multiple-choice)
+    if (!field.options || !Array.isArray(field.options)) {
+      throw new Error('Field does not have options (not multiple-choice type)');
+    }
+
+    const submissions = await this.submissionModel
+      .find({
+        formId,
+        [`data.${fieldId}`]: { $exists: true },
+      })
+      .populate({
+        path: 'submittedBy',
+        select: '_id email',
+      })
+      .sort({ submittedAt: -1 })
+      .lean<ISubmissionWithUser[]>();
+
+    const optionMap: Record<
+      string,
+      { option: string; users: { _id: string; email: string }[] }
+    > = {};
+
+    field.options.forEach((opt: string) => {
+      optionMap[opt] = { option: opt, users: [] };
+    });
+
+    submissions?.forEach((submission) => {
+      const submittedUser = submission.submittedBy as
+        | { _id: string; email: string }
+        | null;
+
+      const answer = submission.data[fieldId];
+      const answers = Array.isArray(answer) ? answer : [answer];
+
+      answers.forEach((ans) => {
+        if (optionMap[ans] && submittedUser) {
+          optionMap[ans].users.push({
+            _id: submittedUser._id.toString(),
+            email: submittedUser.email,
+          });
+        } else {
+          optionMap[ans] = optionMap[ans] || { option: ans, users: [] };
+          optionMap[ans].users.push({
+            _id: 'unknown id',
+            email: 'unknown email',
+          });
+        }
+      });
+    });
+
+    return {
+      field: {
+        id: fieldId,
+        title: fieldTitle,
+        type: field.type,
+        options: field.options,
+      },
+      results: Object.values(optionMap),
+      meta: {
+        totalSubmissions: submissions.length
       },
     };
   }

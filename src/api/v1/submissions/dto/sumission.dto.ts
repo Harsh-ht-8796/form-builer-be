@@ -144,6 +144,17 @@ export class FieldQueryDto {
   limit?: number;
 }
 
+
+export class FieldQueryByIdDto {
+
+  @IsString()
+  @IsOptional()
+  @IsArray()
+  fieldIds?: string[];
+
+}
+
+
 export class SubmissionDto extends SubmissionBaseDto {
   @IsMongoId()
   @IsNotEmpty()

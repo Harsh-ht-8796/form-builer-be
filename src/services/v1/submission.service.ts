@@ -1,5 +1,4 @@
 import { FilterQuery, ObjectId, Types } from 'mongoose';
-
 import CRUD from '@common/interfaces/crud.interface';
 import Submission, { IGetSubmissionSummary, ISubmissionSchema } from '@models/submission.model';
 import { FieldQueryDto, SubmissionDto, SubmissionSummaryQueryDto } from '@v1/submissions/dto/sumission.dto';
@@ -8,13 +7,11 @@ import moment from 'moment';
 import formModel from '@models/form.model';
 import { isArray } from 'lodash';
 
-
 export interface QuestionAnswer {
   question: string;
   answer: any;
   fieldId: string;
 }
-
 
 interface IUserLite {
   _id: string;
@@ -27,7 +24,6 @@ interface ISubmissionWithUser {
   data: Record<string, any>;
   submittedBy?: IUserLite | null; // after populate
 }
-
 
 export interface FieldResponse {
   submissions: {
@@ -56,10 +52,10 @@ export interface SubmissionAnswersResponse {
     limit: number;
   };
 }
+
 export class SubmissionService implements CRUD<ISubmissionSchema> {
   private readonly submissionModel = Submission;
   private readonly formModel = formModel;
-
 
   async create(data: SubmissionDto): Promise<ISubmissionSchema> {
     return this.submissionModel.create(data);
@@ -286,7 +282,6 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
       [`data.${fieldId}`]: { $exists: true },
     });
 
-
     const submissions = await this.submissionModel
       .find({
         formId,
@@ -321,10 +316,8 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
     };
   }
 
-
-
   async getFieldAnswersWithUsers(formId: ObjectId, query: FieldQueryDto) {
-    const { page = 0 } = query;
+    const { page = 0, limit = 10 } = query;
 
     // Validate formId
     const form = await this.formModel.findById(formId).lean();
@@ -341,6 +334,50 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
     const fieldId = field.id;
     const fieldTitle = field.title;
 
+    // If field type is short-text or long-text, use getFieldAnswers logic
+    if (field.type === "short-text" || field.type === "long-text") {
+      // Fetch submissions with pagination for this field
+      const totalSubmissions = await this.submissionModel.countDocuments({
+        formId,
+        [`data.${fieldId}`]: { $exists: true },
+      });
+
+      const submissions = await this.submissionModel
+        .find({
+          formId,
+          [`data.${fieldId}`]: { $exists: true },
+        })
+        .populate({
+          path: "submittedBy",
+          select: "email _id",
+        })
+        .sort({ submittedAt: -1 })
+        .lean();
+
+      // Format answers
+      console.log(JSON.stringify(submissions))
+      const formattedSubmissions = submissions.map(submission => ({
+        submissionId: submission._id,
+        submittedAt: submission.submittedAt,
+        answers: [{
+          question: fieldTitle,
+          answer: submission.data[fieldId],
+          fieldId,
+        }],
+      }));
+
+      return {
+        submissions: formattedSubmissions,
+        meta: {
+          totalSubmissions,
+          totalPages: Math.ceil(form.fields.length / limit) || 0,
+          page: page ?? 0,
+          limit: Math.min(limit, 100),
+        },
+      } as SubmissionAnswersResponse;
+    }
+
+    // Original logic for fields with options (e.g., multiple-choice)
     if (!field.options || !Array.isArray(field.options)) {
       throw new Error("Field does not have options (not multiple-choice type)");
     }
@@ -353,7 +390,7 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
       })
       .populate({
         path: "submittedBy",
-        select: "_id email", // adjust if you have `name`
+        select: "_id email",
       })
       .sort({ submittedAt: -1 })
       .lean<ISubmissionWithUser[]>();
@@ -400,13 +437,14 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
         type: field.type,
         options: field.options,
       },
-      results: Object.values(optionMap), // Array of { option, users }
+      results: Object.values(optionMap),
       meta: {
         totalSubmissions: submissions.length,
+        totalPages: Math.ceil(form.fields.length / limit) || 0,
         fieldIndex: page,
+        page: page ?? 0,
+        limit: limit
       },
     };
   }
-
-
 }

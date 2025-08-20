@@ -234,7 +234,6 @@ export class SubmissionController {
     async getResponseAnswerWisewithUser(
         @Param('formId') formId: ObjectId,
         @QueryParams() query: FieldQueryDto,
-        next: NextFunction
     ) {
         try {
             const { fieldIds, page, limit } = query;
@@ -245,7 +244,7 @@ export class SubmissionController {
             });
             return result;
         } catch (err) {
-            next(err);
+            return { messge: "Some thing goees worng" };
         }
     }
 

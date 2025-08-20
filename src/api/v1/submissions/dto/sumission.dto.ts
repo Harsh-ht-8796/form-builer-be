@@ -1,4 +1,4 @@
-import { IsEnum, IsMongoId, IsNotEmpty, IsObject, IsOptional, IsString, Matches } from 'class-validator';
+import { IsArray, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, Matches } from 'class-validator';
 import { ObjectId } from 'mongoose';
 
 // OpenAPI response schema for submission operations
@@ -126,6 +126,24 @@ export class SubmissionParamsDto {
 export class SubmissionBodyDto extends SubmissionBaseDto {
 }
 
+
+export class FieldQueryDto {
+
+  @IsString()
+  @IsOptional()
+  @IsArray()
+  fieldIds?: string[];
+
+
+  @IsNumber()
+  @IsOptional()
+  page?: number;
+
+  @IsNumber()
+  @IsOptional()
+  limit?: number;
+}
+
 export class SubmissionDto extends SubmissionBaseDto {
   @IsMongoId()
   @IsNotEmpty()
@@ -178,3 +196,25 @@ export class SubmissionSummaryQueryIndivialDto {
   limit?: string
 
 }
+
+export const FieldResponseSchema = {
+  200: {
+    description: 'Paginated list of form fields',
+    type: 'object',
+    properties: {
+      fields: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/IFormField' },
+      },
+      meta: {
+        type: 'object',
+        properties: {
+          totalFields: { type: 'number' },
+          totalPages: { type: 'number' },
+          page: { type: 'number' },
+          limit: { type: 'number' },
+        },
+      },
+    },
+  },
+};

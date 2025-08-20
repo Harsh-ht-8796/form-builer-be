@@ -2,15 +2,63 @@ import { FilterQuery, ObjectId, Types } from 'mongoose';
 
 import CRUD from '@common/interfaces/crud.interface';
 import Submission, { IGetSubmissionSummary, ISubmissionSchema } from '@models/submission.model';
-import { SubmissionDto, SubmissionSummaryQueryDto } from '@v1/submissions/dto/sumission.dto';
+import { FieldQueryDto, SubmissionDto, SubmissionSummaryQueryDto } from '@v1/submissions/dto/sumission.dto';
 import { IUserSchema } from '@models/users.model';
 import moment from 'moment';
 import formModel from '@models/form.model';
+import { isArray } from 'lodash';
 
+
+export interface QuestionAnswer {
+  question: string;
+  answer: any;
+  fieldId: string;
+}
+
+
+interface IUserLite {
+  _id: string;
+  email: string;
+}
+
+interface ISubmissionWithUser {
+  _id: ObjectId;
+  submittedAt: Date;
+  data: Record<string, any>;
+  submittedBy?: IUserLite | null; // after populate
+}
+
+
+export interface FieldResponse {
+  submissions: {
+    submissionId: Types.ObjectId;
+    submittedAt: Date;
+    answers: QuestionAnswer[];
+  }[];
+  meta: {
+    totalSubmissions: number;
+    totalPages: number;
+    page: number;
+    limit: number;
+  };
+}
+
+export interface SubmissionAnswersResponse {
+  submissions: {
+    submissionId: Types.ObjectId;
+    submittedAt: Date;
+    answers: QuestionAnswer[];
+  }[];
+  meta: {
+    totalSubmissions: number;
+    totalPages: number;
+    page: number;
+    limit: number;
+  };
+}
 export class SubmissionService implements CRUD<ISubmissionSchema> {
   private readonly submissionModel = Submission;
   private readonly formModel = formModel;
-
 
 
   async create(data: SubmissionDto): Promise<ISubmissionSchema> {
@@ -43,7 +91,7 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
 
   async findSubmissionsByFormId(
     formId: ObjectId,
-    { limit = 10, page = 0 }: { limit?: number; page?: number; }
+    { limit = 10, page = 0, fieldIds }: { limit?: number; page?: number; fieldIds?: [] }
   ): Promise<{ submissions: ISubmissionSchema[] }> {
     const query = { formId, };
     const submissions = await this.submissionModel
@@ -209,6 +257,155 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
         id: "avg_completion_rate_private",
       },
     ];
+  }
+
+  async getFieldAnswers(formId: ObjectId, query: FieldQueryDto) {
+    const { page = 0, limit = 10 } = query;
+
+    // Validate formId
+    const form = await this.formModel.findById(formId).lean();
+    if (!form) {
+      throw new Error('Form not found');
+    }
+
+    // Ensure page index is within bounds of form.fields
+    if (!form.fields || page < 0 || page >= form.fields.length) {
+      throw new Error('Invalid field index (page)');
+    }
+
+    console.log({ form })
+    // Pick field based on page index
+    const field = form.fields[page];
+    const fieldId = field.id;
+    const fieldTitle = field.title;
+    console.log({ field })
+
+    // Fetch submissions with pagination for this field
+    const totalSubmissions = await this.submissionModel.countDocuments({
+      formId,
+      [`data.${fieldId}`]: { $exists: true },
+    });
+
+
+    const submissions = await this.submissionModel
+      .find({
+        formId,
+        [`data.${fieldId}`]: { $exists: true },
+      })
+      .populate({
+        path: "submittedBy",
+        select: "email",
+      })
+      .sort({ submittedAt: -1 })
+      .lean();
+
+    // Format answers
+    const formattedSubmissions = submissions.map(submission => ({
+      submissionId: submission._id,
+      submittedAt: submission.submittedAt,
+      submittedBy: submission.submittedBy,
+      answer: isArray(submission.data[fieldId]) ? submission.data[fieldId] : [submission.data[fieldId]],
+    }));
+
+    return {
+      submissions: formattedSubmissions,
+      field,
+      meta: {
+        fieldIndex: page, // tells which field you’re looking at
+        fieldId,
+        totalSubmissions,
+        totalPages: Math.ceil(totalSubmissions / limit) || 0,
+        page: page ?? 0,
+        limit: Math.min(limit, 100),
+      },
+    };
+  }
+
+
+
+  async getFieldAnswersWithUsers(formId: ObjectId, query: FieldQueryDto) {
+    const { page = 0 } = query;
+
+    // Validate formId
+    const form = await this.formModel.findById(formId).lean();
+    if (!form) {
+      throw new Error("Form not found");
+    }
+
+    if (!form.fields || page < 0 || page >= form.fields.length) {
+      throw new Error("Invalid field index (page)");
+    }
+
+    // Pick field based on page index
+    const field = form.fields[page];
+    const fieldId = field.id;
+    const fieldTitle = field.title;
+
+    if (!field.options || !Array.isArray(field.options)) {
+      throw new Error("Field does not have options (not multiple-choice type)");
+    }
+
+    // Get all submissions where this field has an answer
+    const submissions = await this.submissionModel
+      .find({
+        formId,
+        [`data.${fieldId}`]: { $exists: true },
+      })
+      .populate({
+        path: "submittedBy",
+        select: "_id email", // adjust if you have `name`
+      })
+      .sort({ submittedAt: -1 })
+      .lean<ISubmissionWithUser[]>();
+
+    // Map option -> array of users
+    const optionMap: Record<
+      string,
+      { option: string; users: { _id: string; email: string }[] }
+    > = {};
+
+    // Initialize map with all options (even if no one selected them)
+    field.options.forEach((opt: string) => {
+      optionMap[opt] = { option: opt, users: [] };
+    });
+
+    // Iterate over submissions and fill users
+    submissions?.forEach((submission) => {
+      const submittedUser = submission.submittedBy as
+        | { _id: string; email: string }
+        | null;
+
+      const answer = submission.data[fieldId];
+      const answers = Array.isArray(answer) ? answer : [answer];
+
+      answers.forEach((ans) => {
+        if (optionMap[ans] && submittedUser) {
+          optionMap[ans].users.push({
+            _id: submittedUser._id.toString(),
+            email: submittedUser.email,
+          });
+        } else {
+          optionMap[ans].users.push({
+            _id: "unknwon id",
+            email: "unknwon email",
+          });
+        }
+      });
+    });
+
+    return {
+      field: {
+        id: fieldId,
+        title: fieldTitle,
+        type: field.type,
+        options: field.options,
+      },
+      results: Object.values(optionMap), // Array of { option, users }
+      meta: {
+        totalSubmissions: submissions.length,
+        fieldIndex: page,
+      },
+    };
   }
 
 

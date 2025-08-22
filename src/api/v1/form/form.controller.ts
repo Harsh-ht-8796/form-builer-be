@@ -131,14 +131,7 @@ export class FormController {
     const isPublished = allowedVisibilyStatus.some((status: "public" | "private" | "domain_restricted") => {
       return updateData.visibility.includes(status);
     });
-    console.log("Form data===>", {
-      settings: {
-        ...form.settings,
-        visibility: updateData.visibility,
-        status: isPublished ? "published" : "draft"
-      },
-      allowedEmails: updateData.allowedEmails
-    })
+
     const updatedForm = await this.formService.update(id, {
       settings: {
         ...form.settings,

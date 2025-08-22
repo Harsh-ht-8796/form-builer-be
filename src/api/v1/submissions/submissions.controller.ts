@@ -184,6 +184,17 @@ export class SubmissionController {
         return this.submissionService.findSubmissionsByFormId(formId, { limit, page: skip });
     }
 
+    @Get('/submission-response-by/:formId')
+    @OpenAPI({ summary: 'Get submissions by form ID', responses: SubmissionResponseSchema })
+    @ResponseSchema(ISubmission, { isArray: true })
+    @UseBefore(auth())
+    @Authorized([UserRole.ORG_ADMIN, UserRole.SUPER_ADMIN, UserRole.TEAM_MEMBER])
+    async getSubmissionsByFormId(
+        @Param('formId') formId: ObjectId
+    ) {
+        const count = await this.submissionService.getSubmisstionCountByFormIdForUser(formId);
+        return { count }
+    }
 
 
     @Get('/:id')

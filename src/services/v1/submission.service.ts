@@ -569,4 +569,10 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
       },
     };
   }
+
+  async getSubmisstionCountByFormIdForUser(formId: ObjectId) {
+    return this.submissionModel.countDocuments({
+      formId
+    })
+  }
 }

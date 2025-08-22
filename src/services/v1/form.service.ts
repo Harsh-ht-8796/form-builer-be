@@ -2,7 +2,7 @@ import { FilterQuery, ObjectId } from 'mongoose';
 
 import CRUD from '@common/interfaces/crud.interface';
 import Form, { IForm, IFormSchema } from '@models/form.model';
-import FormDto from '@v1/form/dtos/form.dto';
+import FormDto, { DeleteImage } from '@v1/form/dtos/form.dto';
 import dayjs from 'dayjs';
 import { IUserSchema } from '@models/users.model';
 import { MODELS } from '@common/constants';
@@ -253,5 +253,15 @@ export class FormService implements CRUD<IFormSchema> {
         page: findParams.page,
       },
     };
+  }
+
+  async deleteCoverOrLogo(id: ObjectId, selectImage: DeleteImage) {
+    const { image } = selectImage;
+    const key = image === "cover" ? "coverImage" : "logoImage";
+    return this.formModel.findByIdAndUpdate(id, {
+      [key]: ''
+    }, {
+      new: true
+    })
   }
 }

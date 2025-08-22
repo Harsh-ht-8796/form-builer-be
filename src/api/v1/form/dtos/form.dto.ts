@@ -144,3 +144,14 @@ export default class FormDto {
   @IsOptional()
   createdBy?: String;
 }
+
+export class DeleteImage {
+  @IsEnum(['cover', 'logo'])
+  image!: 'cover' | 'logo';
+}
+
+
+
+
+
+

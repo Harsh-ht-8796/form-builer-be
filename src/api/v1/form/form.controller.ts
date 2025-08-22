@@ -11,7 +11,7 @@ import { IUserSchema } from '@models/users.model';
 import { FormService } from '@services/v1';
 import path from 'path';
 import fs from 'fs';
-import FormDto, { FormResponseSchema } from './dtos/form.dto';
+import FormDto, { DeleteImage, FormResponseSchema } from './dtos/form.dto';
 import FormSearchDto from './dtos/form-search.dto';
 import upload from './multer';
 import isFormExists from '@middlewares/is.form.exists';
@@ -94,7 +94,8 @@ export class FormController {
       }
       return form;
     } catch (err) {
-      next(err);
+      console.log(err)
+      throw new Error("Something goes wrong")
     }
   }
 
@@ -184,6 +185,18 @@ export class FormController {
   }
 
 
+  @Delete('/:id/image')
+  @OpenAPI({ summary: 'Delete a form by ID', responses: FormResponseSchema })
+  @ResponseSchema(IForm)
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
+  async deleteImage(@Param('id') id: ObjectId, @Body() body: DeleteImage) {
+    const form = await this.formService.deleteCoverOrLogo(id, body);
+    if (!form) {
+      throw new Error('Form not found');
+    }
+    return form;
+  }
   @Delete('/:id')
   @OpenAPI({ summary: 'Delete a form by ID', responses: FormResponseSchema })
   @ResponseSchema(IForm)

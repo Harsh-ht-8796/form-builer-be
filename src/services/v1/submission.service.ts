@@ -116,67 +116,71 @@ export class SubmissionService implements CRUD<ISubmissionSchema> {
   ) {
     const { accessibility, fromDate, title, toDate } = query;
 
+    const match: Record<string, any> = {};
+
+    // accessibility filter
+    if (accessibility) {
+      match.accessibility = accessibility;
+    }
+
+    // date filter only if both present
+    if (fromDate && toDate) {
+      match.submittedAt = {
+        $gte: moment(fromDate, "DD-MM-YYYY").startOf("day").toDate(),
+        $lte: moment(toDate, "DD-MM-YYYY").endOf("day").toDate(),
+      };
+    }
+
     const pipeline: any[] = [
-      ...(accessibility ? [{
-        $match: {
-          accessibility, submittedAt: {
-            "$lte": moment(toDate, "DD-MM-YYYY").toDate(),
-            "$gte": moment(fromDate, "DD-MM-YYYY").toDate()
-          }
-        }
-      }] : [{
-        $match: {
-          submittedAt: {
-            "$lte": moment(toDate, "DD-MM-YYYY").toDate(),
-            "$gte": moment(fromDate, "DD-MM-YYYY").toDate()
-          }
-        }
-      }]),
+      { $match: match },
       {
         $group: {
           _id: {
-            formId: '$formId',
-            accessibility: '$accessibility',
+            formId: "$formId",
+            accessibility: "$accessibility",
           },
           responseCount: { $sum: 1 },
         },
       },
       {
         $lookup: {
-          from: 'forms',
-          let: { formId: '$_id.formId' }, // Adjusted to reference grouped formId
+          from: "forms",
+          let: { formId: "$_id.formId" },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$_id', '$$formId'] },
-                    { $eq: ['$orgId', userDetails.orgId] },
+                    { $eq: ["$_id", "$$formId"] },
+                    { $eq: ["$orgId", userDetails.orgId] },
                   ],
                 },
                 ...(title
-                  ? { title: { $regex: title, $options: 'i' } }
+                  ? { title: { $regex: title, $options: "i" } }
                   : {}),
               },
             },
-            { $project: { title: 1 } }, // Keep projection light
+            { $project: { title: 1 } },
           ],
-          as: 'form',
+          as: "form",
         },
       },
-      { $unwind: { path: '$form', preserveNullAndEmptyArrays: false } },
+      { $unwind: { path: "$form", preserveNullAndEmptyArrays: false } },
       {
         $project: {
-          formId: '$_id.formId',
-          accessibility: '$_id.accessibility', // Include accessibility in output
+          formId: "$_id.formId",
+          accessibility: "$_id.accessibility",
           responseCount: 1,
-          formName: '$form.title',
+          formName: "$form.title",
         },
       },
     ];
 
+    // console.log(JSON.stringify(pipeline, null, 2));
+
     return this.submissionModel.aggregate<IGetSubmissionSummary>(pipeline).exec();
   }
+
 
   async getOverViewCard(userDetails: IUserSchema) {
     // Fetch total number of forms for the user's organization

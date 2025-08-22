@@ -110,8 +110,23 @@ export class FormService implements CRUD<IFormSchema> {
     };
   }
 
-  async getById(id: ObjectId): Promise<IFormSchema | null> {
-    return this.formModel.findById(id, {
+  async getById(id: ObjectId,): Promise<IFormSchema | null> {
+    return this.formModel.findOne({ _id: id, isActive: true }, {
+      allowedDomains: 0,
+      allowedEmails: 0,
+    });
+  }
+
+  async getByIdFilter(id: ObjectId, filter: FilterQuery<IFormSchema>,): Promise<IFormSchema | null> {
+    console.log({ _id: id, ...filter })
+    return this.formModel.findOne({ _id: id, ...filter }, {
+      allowedDomains: 0,
+      allowedEmails: 0,
+    });
+  }
+
+  async getByIdForStatus(id: ObjectId): Promise<IFormSchema | null> {
+    return this.formModel.findOne({ _id: id }, {
       allowedDomains: 0,
       allowedEmails: 0,
     });
@@ -134,6 +149,7 @@ export class FormService implements CRUD<IFormSchema> {
   async update(id: ObjectId, data: Partial<IForm>): Promise<IFormSchema | null> {
     return this.formModel.findByIdAndUpdate(id, data, { new: true });
   }
+
 
   async delete(id: ObjectId): Promise<IFormSchema | null> {
     return this.formModel.findByIdAndDelete(id);
@@ -255,6 +271,12 @@ export class FormService implements CRUD<IFormSchema> {
     };
   }
 
+  async getFormStatusById(id: ObjectId): Promise<IFormSchema | null> {
+    return this.formModel.findById(id, {
+      isActive: 1,
+      fields: 1
+    });
+  }
   async deleteCoverOrLogo(id: ObjectId, selectImage: DeleteImage) {
     const { image } = selectImage;
     const key = image === "cover" ? "coverImage" : "logoImage";

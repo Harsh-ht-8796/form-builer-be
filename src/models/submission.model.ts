@@ -66,7 +66,7 @@ const submissionSchema = new Schema<ISubmissionSchema>(
 submissionSchema.pre<ISubmissionSchema>('save', async function (next) {
   try {
     if (this.formId) {
-      const formExists = await Form.exists({ _id: this.formId });
+      const formExists = await Form.exists({ _id: this.formId, isActive: true });
       if (!formExists) {
         throw new Error('Invalid formId: Form does not exist');
       }

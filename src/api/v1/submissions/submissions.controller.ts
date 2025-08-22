@@ -59,12 +59,13 @@ export class SubmissionController {
                 formId,
                 ...(user && user._id ? { submittedBy: user._id as ObjectId, orgId: user.orgId as ObjectId } : {}),
             };
-            const submission = await this.submissionService.create(submissionPayload);
 
             const form = await this.formService.getById(formId);
             if (!form) {
                 throw new Error('Form not found');
             }
+            
+            const submission = await this.submissionService.create(submissionPayload);
 
             if (
                 form?.settings &&

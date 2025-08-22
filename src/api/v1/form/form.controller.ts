@@ -15,7 +15,7 @@ import FormDto, { DeleteImage, FormResponseSchema } from './dtos/form.dto';
 import FormSearchDto from './dtos/form-search.dto';
 import upload from './multer';
 import isFormExists from '@middlewares/is.form.exists';
-import { IsArray, IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
 import { fileTypeFromBuffer } from 'file-type';
 
 class UpdateVisibilityDto {
@@ -27,6 +27,11 @@ class UpdateVisibilityDto {
   @IsOptional()
   @IsEmail({}, { each: true })
   allowedEmails?: string[];
+}
+
+class UpdateIsReceiveResponse {
+  @IsBoolean()
+  isActive;
 }
 
 @JsonController('/v1/forms', { transformResponse: false })
@@ -86,9 +91,30 @@ export class FormController {
   @ResponseSchema(IForm)
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole])
-  async getUserForm(@Param('id') id: ObjectId, next: NextFunction) {
+  async getUserForm(@Param('id') id: ObjectId) {
     try {
-      const form = await this.formService.getById(id);
+      const form = await this.formService.getByIdFilter(id, {
+        isActive: true,
+        "status": "draft"
+      });
+      if (!form) {
+        throw new Error('Form not found');
+      }
+      return form;
+    } catch (err) {
+      console.log(err)
+      throw new Error(err.message || "Something goes wrong")
+    }
+  }
+
+  @Get('/:id/active-status')
+  @OpenAPI({ summary: 'Get a form by ID', responses: FormResponseSchema })
+  @ResponseSchema(IForm)
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole])
+  async getFormStatus(@Param('id') id: ObjectId) {
+    try {
+      const form = await this.formService.getFormStatusById(id);
       if (!form) {
         throw new Error('Form not found');
       }
@@ -111,7 +137,7 @@ export class FormController {
       }
       return form;
     } catch (err) {
-      next(err);
+      throw new Error(err?.message || "Something goes wrong")
     }
   }
 
@@ -146,6 +172,28 @@ export class FormController {
     }
     return updatedForm;
   }
+
+  @Put('/:id/is-receive-response')
+  @OpenAPI({ summary: 'Update form visibility and allowed emails', responses: FormResponseSchema })
+  @ResponseSchema(IForm)
+  @UseBefore(auth())
+  @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
+  async isReceiveResponse(@Param('id') id: ObjectId, @Body() updateData: UpdateIsReceiveResponse) {
+    const form = await this.formService.getByIdForStatus(id);
+    console.log({ form })
+    if (!form) {
+      throw new Error('Form not found 1');
+    }
+    const { isActive } = updateData
+    const updatedForm = await this.formService.update(id, {
+      isActive
+    });
+    if (!updatedForm) {
+      throw new Error('Form update failed');
+    }
+    return updatedForm;
+  }
+
 
   @Get('/:id/visibility')
   @OpenAPI({ summary: 'Get form visibility and allowed emails', responses: { '200': { description: 'Visibility and allowed emails' } } })

@@ -32,5 +32,6 @@ export const jwt = {
   resetPasswordExpireIn: checkEnv('JWT_RESET_PASSWORD_EXPIRE_IN'),
   resetPasswordExpireFormat: checkEnv('JWT_RESET_PASSWORD_EXPIRE_FORMAT'),
 };
+export const NODERED_URL: string = checkEnv('APP_NODE_RED_URL', 'http://localhost:1880')
 
 export * from './passport';

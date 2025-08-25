@@ -38,6 +38,11 @@ class UpdateIsReceiveResponse {
 export class FormController {
   private readonly formService = new FormService();
 
+  @Post('/sent-test-email')
+  async sendTestEmail() {
+    const result = await this.formService.sendTestEmail();
+    return result;
+  }
   @Post('/')
   @HttpCode(201)
   @OpenAPI({ summary: 'Create a new form', responses: FormResponseSchema })
@@ -310,4 +315,6 @@ export class FormController {
     }
     return form;
   }
+
+
 }

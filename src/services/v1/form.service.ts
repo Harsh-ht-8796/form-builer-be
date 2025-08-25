@@ -6,6 +6,13 @@ import FormDto, { DeleteImage } from '@v1/form/dtos/form.dto';
 import dayjs from 'dayjs';
 import { IUserSchema } from '@models/users.model';
 import { MODELS } from '@common/constants';
+import { data, template } from '@utils/email';
+import Mustache from "mustache";
+import fs from "fs";
+import path from "path";
+import { NODERED_URL } from '@config';
+
+
 
 export class FormService implements CRUD<IFormSchema> {
   private readonly formModel = Form;
@@ -285,5 +292,30 @@ export class FormService implements CRUD<IFormSchema> {
     }, {
       new: true
     })
+  }
+
+  async sendTestEmail(): Promise<{ success: boolean; message: string }> {
+    // Placeholder for actual email sending logic
+    // You would typically use an email service like SendGrid, SES, etc.
+    const templatePath = path.resolve(__dirname, "../../../templates/order-confirmation.html");
+    const templateHtml = fs.readFileSync(templatePath, "utf8");
+    console.log({ APP_NODE_RED_URL: NODERED_URL })
+    const renderedHtml = Mustache.render(templateHtml, data);
+    const to = "harshadtibile@gmail.com"
+    await fetch(NODERED_URL + "/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to,
+        subject: "Order Confirmation",
+        html: renderedHtml   // ✅ already rendered
+      })
+    });
+
+    // Simulate email sending
+    return {
+      success: true,
+      message: `Test email sent to ${to} successfully.`,
+    };
   }
 }

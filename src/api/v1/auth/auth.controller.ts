@@ -11,6 +11,8 @@ import LogoutDto from './dtos/logout.dto';
 import RefreshTokenDto from './dtos/refreshToken.dto';
 import RegisterDto from './dtos/register.dto';
 import ResetPasswordDto from './dtos/resetPassword.dto';
+import { sendEmail } from '@utils/email';
+import { TemplateType } from '@common/types/template-type.enum';
 
 @JsonController('/v1/auth', { transformResponse: false })
 export class AuthController {
@@ -26,11 +28,13 @@ export class AuthController {
   async register(@Body() userData: RegisterDto) {
     const user = await this.userService.createUser(userData);
     const tokens = await this.tokenService.generateAuthTokens(user);
-
+    await sendEmail(TemplateType.AdminSuccessfulSignup,
+      { adminName: user.username, email: user.email },
+      user.email);
     return { user, tokens };
   }
 
-  
+
   @Post('/login')
   @OpenAPI({
     description: 'user data and tokens',
@@ -82,5 +86,5 @@ export class AuthController {
   }
 
 
-  
+
 }

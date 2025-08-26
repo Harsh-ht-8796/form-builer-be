@@ -1,12 +1,16 @@
-import { IsString } from 'class-validator';
+import { IsString, ValidateNested } from 'class-validator';
 import InviteRegisterDto from './invite-user-register.dto';
 import { ObjectId } from 'mongoose';
+import { Type } from 'class-transformer';
+import { IOrganization } from '@models/organization.model';
 
 
 export class UserOrganizationWithOrgIdDto extends InviteRegisterDto {
-  @IsString()
-  orgId!: ObjectId;
+  @ValidateNested()
+  @Type(() => Object) // Or a specific DTO if you have one for IOrganization
+  orgId!: IOrganization;
 }
+
 export const UserOrganizationResponseSchema = {
   '201': {
     content: {

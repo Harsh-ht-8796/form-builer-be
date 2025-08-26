@@ -1,11 +1,15 @@
-import bcrypt from 'bcrypt';
-import { IsArray, IsBoolean, IsEmail, IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsEmail, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
 import mongoose, { Document, ObjectId, Schema, Types } from 'mongoose';
+import bcrypt from 'bcrypt';
 
 import { MODELS } from '@common/constants';
 import ITimesStamp from '@common/interfaces/timestamp.interface';
 import { UserRole } from '@common/types/roles';
 import toJSON from '@utils/toJSON.plugin';
+import { IOrganization, IOrganizationSchema } from './organization.model';
+
+// Assuming you have an IOrganization interface/class defined in your project
 
 export class IUser extends ITimesStamp {
   @IsString()
@@ -20,7 +24,7 @@ export class IUser extends ITimesStamp {
   @IsBoolean()
   isEmailVerified!: boolean;
 
-  @IsMongoId()
+  @IsOptional()
   orgId?: ObjectId;
 
   @IsArray()
@@ -29,7 +33,36 @@ export class IUser extends ITimesStamp {
 
   @IsString()
   @IsOptional()
-  profileImage: string;
+  profileImage!: string;
+}
+
+// New class for user with organization populated data
+export class IUserWithOrganization extends ITimesStamp {
+  @IsString()
+  username!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  password!: string;
+
+  @IsBoolean()
+  isEmailVerified!: boolean;
+
+  // Instead of just an orgId, we now include the full organization object.
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => IOrganization)
+  orgId?: IOrganizationSchema;
+
+  @IsArray()
+  @IsEnum(UserRole, { each: true })
+  roles!: UserRole[];
+
+  @IsString()
+  @IsOptional()
+  profileImage!: string;
 }
 
 export class IRoles {
@@ -38,7 +71,8 @@ export class IRoles {
   roles!: UserRole[];
 }
 
-export interface IUserSchema extends Document, IUser { }
+
+export interface IUserSchema extends Document, IUser {}
 
 const userSchema: Schema = new Schema(
   {
@@ -64,6 +98,7 @@ const userSchema: Schema = new Schema(
     orgId: {
       type: Types.ObjectId,
       default: null,
+      ref: MODELS.ORGANIZATIONS,
       required: false
     },
     isEmailVerified: {

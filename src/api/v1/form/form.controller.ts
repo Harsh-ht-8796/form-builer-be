@@ -7,8 +7,8 @@ import crypto from 'crypto';
 import { UserRole } from '@common/types/roles';
 import { auth, conditionalAuth } from '@middlewares/index';
 import formModel, { IForm } from '@models/form.model';
-import { IUserSchema } from '@models/users.model';
-import { FormService } from '@services/v1';
+import { IUserSchema, IUserWithOrganization } from '@models/users.model';
+import { FormService, UserService } from '@services/v1';
 import path from 'path';
 import fs from 'fs';
 import FormDto, { DeleteImage, FormResponseSchema } from './dtos/form.dto';
@@ -17,6 +17,8 @@ import upload from './multer';
 import isFormExists from '@middlewares/is.form.exists';
 import { IsArray, IsBoolean, IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
 import { fileTypeFromBuffer } from 'file-type';
+import { sendEmail } from '@utils/email';
+import { TemplateType } from '@common/types/template-type.enum';
 
 class UpdateVisibilityDto {
   @IsArray()
@@ -37,6 +39,7 @@ class UpdateIsReceiveResponse {
 @JsonController('/v1/forms', { transformResponse: false })
 export class FormController {
   private readonly formService = new FormService();
+  private readonly userService = new UserService();
 
   @Post('/')
   @HttpCode(201)
@@ -147,14 +150,14 @@ export class FormController {
   // @UseBefore(validationMiddleware(UpdateVisibilityDto, 'body'))
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.TEAM_MEMBER])
-  async updateVisibility(@Param('id') id: ObjectId, @Body() updateData: UpdateVisibilityDto) {
+  async updateVisibility(@Param('id') id: ObjectId, @CurrentUser() userDetails: IUserWithOrganization, @Body() updateData: UpdateVisibilityDto) {
     const form = await this.formService.getById(id);
     if (!form) {
       throw new Error('Form not found');
     }
-    const allowedVisibilyStatus = ["public", "private", "domain_restricted"];
+    const allowedVisibilityStatus = ["public", "private", "domain_restricted"];
 
-    const isPublished = allowedVisibilyStatus.some((status: "public" | "private" | "domain_restricted") => {
+    const isPublished = allowedVisibilityStatus.some((status: "public" | "private" | "domain_restricted") => {
       return updateData.visibility.includes(status);
     });
 
@@ -162,7 +165,6 @@ export class FormController {
       settings: {
         ...form.settings,
         visibility: updateData.visibility,
-
       },
       status: isPublished ? "published" : "draft",
       allowedEmails: updateData.allowedEmails
@@ -170,6 +172,32 @@ export class FormController {
     if (!updatedForm) {
       throw new Error('Form update failed');
     }
+
+    // If allowedEmails is provided, send an invitation email to each email address in parallel.
+    if (updateData.allowedEmails && updateData.allowedEmails.length > 0) {
+      const { username, orgId } = userDetails;
+      const alreadyExistingEmails = await this.userService.getExistingEmails(updateData.allowedEmails);
+      const orgName = orgId?.name || 'Organization';
+      const signupLink = 'https://example.com/login'; // update to your actual login URL
+
+      const emailPromises = alreadyExistingEmails.map(email =>
+        sendEmail(
+          TemplateType.UserInvitation,
+          {
+            userName: username || 'Admin',
+            orgName,
+            signupLink
+          },
+          email
+        )
+      )
+      if (emailPromises.length) {
+        // await Promise.all(
+        //   emailPromises
+        // );
+      }
+    }
+
     return updatedForm;
   }
 

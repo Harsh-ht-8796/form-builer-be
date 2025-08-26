@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 import { UserRole } from '@common/types/roles';
 import auth from '@middlewares/auth.middleware';
-import usersModel, { IRoles, IUser, IUserSchema } from '@models/users.model';
+import usersModel, {  IRoles, IUser, IUserSchema } from '@models/users.model';
 import { UserService } from '@services/v1';
 import UserSearchDto from './form-search.dto';
 import { UserOrganizationResponseSchema } from '@v1/organizations/dtos/invite-organization.dto';

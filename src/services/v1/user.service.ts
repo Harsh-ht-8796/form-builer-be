@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { ObjectId } from 'mongoose';
 import { BadRequestError } from 'routing-controllers';
-
+import { cloneDeep } from "lodash"
 import CRUD from '@common/interfaces/crud.interface';
 import { UserRole } from '@common/types/roles';
 import Users, { IUser, IUserSchema } from '@models/users.model';
@@ -41,16 +41,25 @@ export class UserService implements CRUD<IUserSchema> {
       throw new BadRequestError(`Email already taken: ${existing.email}`);
     }
 
+    // Helper function to generate a random password
+    const generateRandomPassword = (length: number = 12): string => {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
     // Add default password for each user
     const inviteUsers = userData.map(user => ({
       ...user,
-      password: "Test@123"
+      password: generateRandomPassword()
     }));
-
+    const copyInviteUsers = cloneDeep(inviteUsers);
     const users = await this.userModel.insertMany(inviteUsers);
-    return users;
+    return copyInviteUsers;
   }
-
 
   async getUserByEmail(email: string) {
     return await this.userModel.findOne({ email });
@@ -66,7 +75,7 @@ export class UserService implements CRUD<IUserSchema> {
 
   async updateById(id: ObjectId, updateBody: Partial<IUser>): Promise<IUserSchema | null> {
     // prevent user change his email
-    const { username } = updateBody
+    const { username } = updateBody;
     const user = await this.getById(id);
     if (!user) {
       throw new BadRequestError('User not found');
@@ -85,6 +94,7 @@ export class UserService implements CRUD<IUserSchema> {
       ]);
     });
   }
+
   async findAll(filter: FilterQuery<IUserSchema> = {}, limit = 10, page = 0) {
     const totalDocs = await this.userModel.countDocuments(filter);
     const docs = await this.userModel
@@ -212,4 +222,14 @@ export class UserService implements CRUD<IUserSchema> {
     return { message: 'Password updated successfully' };
   }
 
+  // New function that accepts an array of emails and returns those already in the user collection
+  async getExistingEmails(emails: string[]): Promise<string[]> {
+    const existingUsers = await this.userModel
+      .find({ email: { $in: emails } })
+      .select('email')
+      .lean();
+    console.log({ emails: { $nin: emails } });
+
+    return existingUsers.map(user => user.email);
+  }
 }

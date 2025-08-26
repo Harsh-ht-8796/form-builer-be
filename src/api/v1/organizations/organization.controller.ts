@@ -6,11 +6,13 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { UserRole } from '@common/types/roles';
 import { auth } from '@middlewares/index';
 import { IOrganization } from '@models/organization.model';
-import { IUser, IUserSchema } from '@models/users.model';
+import { IUser, IUserSchema, IUserWithOrganization } from '@models/users.model';
 import { OrganizationService } from '@services/v1';
 
 import { OrganizationDto, OrganizationResponseSchema } from './dtos/organization.dto';
 import { InviteRegisterArrayDto } from './dtos/invite-user-register.dto';
+import { sendEmail } from '@utils/email';
+import { TemplateType } from '@common/types/template-type.enum';
 
 @JsonController('/v1/organizations', { transformResponse: false })
 export class OrganizationController {
@@ -37,16 +39,36 @@ export class OrganizationController {
   @UseBefore(auth())
   @Authorized([UserRole.SUPER_ADMIN])
   //@UseBefore(validationMiddleware(RegisterDto, 'body'))
-  async userInvite(@Body() userData: InviteRegisterArrayDto, @CurrentUser() userDetails: IUserSchema) {
+  async userInvite(@Body() userData: InviteRegisterArrayDto, @CurrentUser() userDetails: IUserWithOrganization) {
 
     const modified = userData.users.map(user => {
       return {
         ...user,
-        orgId: userDetails.orgId
+        orgId: userDetails.orgId,
       }
     });
 
-    await this.organizationService.userInvitation(modified);
+    const inseredUser = await this.organizationService.userInvitation(modified);
+
+    const sentEmailUsers = inseredUser.map(user => ({
+      email: user.email,
+      password: user.password
+    }));
+
+    const emailPromises = sentEmailUsers.map(({ email, password }) =>
+      sendEmail(
+        TemplateType.UserInvitation,
+        {
+          userName: userDetails.username,
+          orgName: userDetails.orgId.name || 'Organization',
+          userEmail: email,
+          userPassword: password,
+          loginLink: process.env.FRONTEND_URL || 'http://localhost:3000'
+        },
+        email
+      )
+    );
+    await Promise.all(emailPromises);
 
     return { message: "User successfully inviated" };
   }

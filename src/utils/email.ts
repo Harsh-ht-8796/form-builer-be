@@ -25,7 +25,7 @@ export async function sendEmail(
   templateType: TemplateType,
   userData: Record<string, any>,
   to: string = ""
-): Promise<{ success: boolean; message: string }> {
+): Promise<any> {
   let templateFile = "";
 
   switch (templateType) {
@@ -56,7 +56,8 @@ export async function sendEmail(
   const templateHtml = fs.readFileSync(templatePath, "utf8");
   const renderedHtml = Mustache.render(templateHtml, userData);
 
-  await fetch(NODERED_URL + "/send-email", {
+  console.log({ renderedHtml, userData });
+  return fetch(NODERED_URL + "/send-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -66,8 +67,8 @@ export async function sendEmail(
     }),
   });
 
-  return {
-    success: true,
-    message: `Test email (${templateType}) sent to ${to} successfully.`,
-  };
+  // return {
+  //   success: true,
+  //   message: `Test email (${templateType}) sent to ${to} successfully.`,
+  // };
 }

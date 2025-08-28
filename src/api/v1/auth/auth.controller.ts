@@ -73,7 +73,7 @@ export class AuthController {
   //@UseBefore(validationMiddleware(ForgotPasswordDto, 'body'))
   async forgotPassword(@Body() userData: ForgotPasswordDto) {
     const token = await this.tokenService.generateResetPasswordToken(userData.email);
-
+    
     // should use email service to send the token to email owner, not return it!
     return { token };
   }

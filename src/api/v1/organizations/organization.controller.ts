@@ -62,7 +62,7 @@ export class OrganizationController {
         {
           userName: "Client",
           orgName: userDetails.orgId.name || 'Organization',
-          loginLink: `${process.env.FRONTEND_URL}?email=${email}&otp=${password}` || 'http://localhost:3000'
+          loginLink: `${process.env.FRONTEND_URL}/auth/otp-password-update?email=${email}&otp=${password}` || 'http://localhost:3000'
         },
         email
       )

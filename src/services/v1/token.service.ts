@@ -10,6 +10,8 @@ import Tokens from '@models/tokens.model';
 import { IUserSchema } from '@models/users.model';
 
 import { UserService } from './user.service';
+import { sendEmail } from '@utils/email';
+import { TemplateType } from '@common/types/template-type.enum';
 
 export class TokenService {
   private readonly userService = new UserService();
@@ -72,8 +74,13 @@ export class TokenService {
 
     const expireIn = moment().add(jwt.resetPasswordExpireIn as moment.unitOfTime.DurationConstructor, jwt.resetPasswordExpireFormat);
     const resetPasswordToken = this.generateToken(user.id, expireIn.unix(), TokenTypes.RESET_PASSWORD);
-    await this.saveToken(resetPasswordToken, user.id, expireIn.toDate(), TokenTypes.RESET_PASSWORD);
-
+    await Promise.all([
+      this.saveToken(resetPasswordToken, user.id, expireIn.toDate(), TokenTypes.RESET_PASSWORD),
+      sendEmail(TemplateType.UserForgotPassword, {
+        userName: user.email || 'User',
+        resetUrl: `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetPasswordToken}`
+      }, email)
+    ]);
     return resetPasswordToken;
   }
 

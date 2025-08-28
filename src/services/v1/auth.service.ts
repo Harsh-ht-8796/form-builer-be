@@ -4,6 +4,8 @@ import { TokenTypes } from '@common/constants';
 import Tokens from '@models/tokens.model';
 import { TokenService, UserService } from '@services/v1';
 import SetPasswordDto from '@v1/auth/dtos/setPassword.dto';
+import { sendEmail } from '@utils/email';
+import { TemplateType } from '@common/types/template-type.enum';
 
 export class AuthService {
   private readonly tokenModel = Tokens;
@@ -37,7 +39,13 @@ export class AuthService {
 
 
     const response = await this.userService.updateById(user.id, { password: newPassword, isInitialPasswordUpdated: true });
-    await this.tokenModel.deleteMany({ userId: user.id, type: TokenTypes.ACCESS });
+    await Promise.all([
+      this.tokenModel.deleteMany({ userId: user.id, type: TokenTypes.ACCESS }),
+      sendEmail(TemplateType.AdminSuccessfulSignup,
+        { adminName: user.username, email: user.email },
+        user.email)
+    ])
+
     console.log("Password updated for user:", response);
     return response;
   }
@@ -79,8 +87,15 @@ export class AuthService {
         throw new NotFoundError('User not found');
       }
 
-      await this.userService.updateById(user.id, { password });
-      await this.tokenModel.deleteMany({ userId: user.id });
+      await Promise.all([
+        this.userService.updateById(user.id, { password }),
+        this.tokenModel.deleteMany({ userId: user.id }),
+        sendEmail(TemplateType.PasswordResetSuccess,
+          {
+            firstName: user.username || 'User',
+            platformName: process.env.PLATFORM_NAME || 'Our Platform'
+          },
+          user.email)]);
     } catch (error) {
       if ((error as Error).message === 'Token not found' || (error as Error).message === 'jwt expired') {
         throw new UnauthorizedError('Token not found');

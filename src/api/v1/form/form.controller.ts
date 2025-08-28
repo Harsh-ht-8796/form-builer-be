@@ -8,7 +8,7 @@ import { UserRole } from '@common/types/roles';
 import { auth, conditionalAuth } from '@middlewares/index';
 import formModel, { IForm } from '@models/form.model';
 import { IUserSchema, IUserWithOrganization } from '@models/users.model';
-import { FormService, UserService } from '@services/v1';
+import { FormService, OrganizationService, UserService } from '@services/v1';
 import path from 'path';
 import fs from 'fs';
 import FormDto, { DeleteImage, FormResponseSchema } from './dtos/form.dto';
@@ -40,6 +40,7 @@ class UpdateIsReceiveResponse {
 export class FormController {
   private readonly formService = new FormService();
   private readonly userService = new UserService();
+  private readonly organizationService = new OrganizationService();
 
   @Post('/')
   @HttpCode(201)
@@ -177,24 +178,71 @@ export class FormController {
     if (updateData.allowedEmails && updateData.allowedEmails.length > 0) {
       const { username, orgId } = userDetails;
       const alreadyExistingEmails = await this.userService.getExistingEmails(updateData.allowedEmails);
+
+      const usersNotRegistered = updateData.allowedEmails.filter(email => !alreadyExistingEmails.includes(email));
       const orgName = orgId?.name || 'Organization';
       const signupLink = 'https://example.com/login'; // update to your actual login URL
 
-      const emailPromises = alreadyExistingEmails.map(email =>
-        sendEmail(
+
+
+      const modified = usersNotRegistered.map(email => {
+        return {
+          email,
+          roles: [UserRole.USER],
+          orgId: userDetails.orgId,
+        }
+      });
+
+
+      const inseredUser = await this.organizationService.userInvitation(modified);
+
+      const sentEmailUsers = inseredUser.map(user => ({
+        email: user.email,
+        password: user.password
+      }));
+
+
+      const emailPromises = sentEmailUsers.map(({ email, password }) => {
+        console.log("Sending email to:", process.env.FRONTEND_URL);
+        return sendEmail(
           TemplateType.UserInvitation,
           {
-            userName: username || 'Admin',
-            orgName,
-            signupLink
+            userName: "Client",
+            orgName: userDetails.orgId.name || 'Organization',
+            loginLink: `${process.env.FRONTEND_URL}/auth/otp-password-update?email=${email}&otp=${password}` || 'http://localhost:3000'
           },
           email
         )
-      )
+      }
+      );
+
+      const sendPrivateFormInvitationEmailPromises = updateData.allowedEmails.map(email => {
+        return sendEmail(
+          TemplateType.privateFormInvitation,
+          {
+            firstName: email.split('@')[0],
+            platformName: process.env.PLATFORM_NAME || 'Our Platform',
+            link: `${process.env.FRONTEND_URL}/form/${form._id}` || 'http://localhost:3000'
+          },
+          email
+        )
+      })
+      // const emailPromises = usersNotRegistered.map(email =>
+      //   sendEmail(
+      //     TemplateType.UserInvitation,
+      //     {
+      //       userName: username || 'Admin',
+      //       orgName,
+      //       signupLink
+      //     },
+      //     email
+      //   )
+      // )
       if (emailPromises.length) {
-        // await Promise.all(
-        //   emailPromises
-        // );
+        await Promise.all(
+          [...emailPromises,
+          ...sendPrivateFormInvitationEmailPromises]
+        );
       }
     }
 

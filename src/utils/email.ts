@@ -47,7 +47,19 @@ export async function sendEmail(
     case TemplateType.UserInvitation:
       templateFile = "user-invitation.html";
       break;
-    default:
+    case TemplateType.PasswordResetSuccess:
+      templateFile = "password-reset-success-email.html";
+      break;
+   case TemplateType.formResponseNotificationForAdmin:
+      templateFile = "form-response-notification-email.html";
+      break;
+   case TemplateType.privateFormInvitation:
+      templateFile = "private-form-invitation-email.html";
+      break;
+   case TemplateType.formEditNotificationForUser:
+      templateFile = "form-submission-confirmation-email.html";
+      break;
+      default:
       throw new Error(`Unknown template type: ${templateType}`);
   }
 

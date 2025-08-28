@@ -1,4 +1,4 @@
-import { Body, HttpCode, JsonController, Post, UseBefore } from 'routing-controllers';
+import { Body, Get, HttpCode, JsonController, Post, QueryParams, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import validationMiddleware from '@middlewares/validation.middleware';
@@ -13,6 +13,8 @@ import RegisterDto from './dtos/register.dto';
 import ResetPasswordDto from './dtos/resetPassword.dto';
 import { sendEmail } from '@utils/email';
 import { TemplateType } from '@common/types/template-type.enum';
+import VerifyOtpDto from './dtos/verifyOtp.dto';
+import SetPasswordDto from './dtos/setPassword.dto';
 
 @JsonController('/v1/auth', { transformResponse: false })
 export class AuthController {
@@ -86,5 +88,33 @@ export class AuthController {
   }
 
 
+  @Get('/verify-otp')
+  @OpenAPI({ summary: 'verify OTP and return access token' })
+  // @ResponseSchema(VerifyOtpResponse)
+  // @UseBefore(validationMiddleware(VerifyOtpDto, 'query'))
+  async verifyOtp(@QueryParams() data: VerifyOtpDto) {
+    console.log("Verifying OTP for email:", data.email);
+    console.log("OTP provided:", data.otp);
+    const user = await this.authService.loginUserWithEmailAndPassword(data.email, data.otp);
+    const saveToken = await this.tokenService.generateAndSaveAccessToken(data.email);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return { accessToken: saveToken };
+  }
+
+  @Post('/set-password')
+  @OpenAPI({ summary: 'set user password with OTP verification and update isInitialPasswordUpdated' })
+  // @UseBefore(validationMiddleware(SetPasswordDto, 'body'))
+  async setPassword(@Body() data: SetPasswordDto) {
+    const user = await this.authService.setPassword(data);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return { message: "Password set successfully" };
+  }
 
 }

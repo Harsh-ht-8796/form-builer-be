@@ -75,13 +75,12 @@ export class UserService implements CRUD<IUserSchema> {
 
   async updateById(id: ObjectId, updateBody: Partial<IUser>): Promise<IUserSchema | null> {
     // prevent user change his email
-    const { username } = updateBody;
     const user = await this.getById(id);
     if (!user) {
       throw new BadRequestError('User not found');
     }
 
-    Object.assign(user, { ...user, username });
+    Object.assign(user, { ...updateBody, username: user.username, email: user.email });
     await user.save();
     return user;
   }

@@ -55,18 +55,18 @@ export class OrganizationController {
       password: user.password
     }));
 
-    const emailPromises = sentEmailUsers.map(({ email, password }) =>
-      sendEmail(
+    const emailPromises = sentEmailUsers.map(({ email, password }) => {
+      console.log("Sending email to:", process.env.FRONTEND_URL);
+      return sendEmail(
         TemplateType.UserInvitation,
         {
-          userName: userDetails.username,
+          userName: "Client",
           orgName: userDetails.orgId.name || 'Organization',
-          userEmail: email,
-          userPassword: password,
-          loginLink: process.env.FRONTEND_URL || 'http://localhost:3000'
+          loginLink: `${process.env.FRONTEND_URL}?email=${email}&otp=${password}` || 'http://localhost:3000'
         },
         email
       )
+    }
     );
     await Promise.all(emailPromises);
 

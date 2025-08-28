@@ -34,9 +34,13 @@ export class IUser extends ITimesStamp {
   @IsString()
   @IsOptional()
   profileImage!: string;
+
+  // New field to track if initial password was updated
+  @IsBoolean()
+  @IsOptional()
+  isInitialPasswordUpdated?: boolean;
 }
 
-// New class for user with organization populated data
 export class IUserWithOrganization extends ITimesStamp {
   @IsString()
   username!: string;
@@ -50,7 +54,6 @@ export class IUserWithOrganization extends ITimesStamp {
   @IsBoolean()
   isEmailVerified!: boolean;
 
-  // Instead of just an orgId, we now include the full organization object.
   @IsOptional()
   @ValidateNested()
   @Type(() => IOrganization)
@@ -63,6 +66,7 @@ export class IUserWithOrganization extends ITimesStamp {
   @IsString()
   @IsOptional()
   profileImage!: string;
+  
 }
 
 export class IRoles {
@@ -105,6 +109,10 @@ const userSchema: Schema = new Schema(
       type: Boolean,
       default: false,
     },
+    isInitialPasswordUpdated: {
+      type: Boolean,
+      default: false,
+    },
     roles: {
       type: [String],
       enum: Object.values(UserRole),
@@ -133,11 +141,13 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.pre('insertMany', async function (next, docs: IUserSchema[]) {
-  for (const doc of docs) {
-    if (typeof doc.password === 'string') {
-      doc.password = await bcrypt.hash(doc.password, 8);
-    }
-  }
+  await Promise.all(
+    docs.map(async (doc) => {
+      if (typeof doc.password === 'string') {
+        doc.password = await bcrypt.hash(doc.password, 8);
+      }
+    })
+  );
   next();
 });
 userSchema.plugin(toJSON);

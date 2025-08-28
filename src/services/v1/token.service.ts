@@ -76,4 +76,16 @@ export class TokenService {
 
     return resetPasswordToken;
   }
+
+  async generateAndSaveAccessToken(email: string) {
+
+    const user = await this.userService.getUserByEmail(email);
+    if (!user) {
+      throw new NotFoundError('User not exists with this email');
+    }
+    const expireIn = moment().add(jwt.accessExpireIn as moment.unitOfTime.DurationConstructor, jwt.accessExpireFormat);
+    const accessToken = this.generateToken(user.id, expireIn.unix(), TokenTypes.ACCESS);
+    await this.saveToken(accessToken, user.id, expireIn.toDate(), TokenTypes.ACCESS);
+    return accessToken;
+  }
 }

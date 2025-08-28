@@ -3,6 +3,7 @@ import { NotFoundError, UnauthorizedError } from 'routing-controllers';
 import { TokenTypes } from '@common/constants';
 import Tokens from '@models/tokens.model';
 import { TokenService, UserService } from '@services/v1';
+import SetPasswordDto from '@v1/auth/dtos/setPassword.dto';
 
 export class AuthService {
   private readonly tokenModel = Tokens;
@@ -17,6 +18,28 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async setPassword(data: SetPasswordDto) {
+    const { email, newPassword, otp, accessToken } = data;
+    console.log("Setting password for email:", data);
+    console.log("OTP provided:", otp);
+
+    const accessTokenDoc = await this.tokenService.verifyToken(accessToken, TokenTypes.ACCESS);
+
+    if (!accessTokenDoc) {
+      throw new UnauthorizedError('Invalid or expired access token');
+    }
+    const user = await this.loginUserWithEmailAndPassword(email, otp);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+
+    const response = await this.userService.updateById(user.id, { password: newPassword, isInitialPasswordUpdated: true });
+    await this.tokenModel.deleteMany({ userId: user.id, type: TokenTypes.ACCESS });
+    console.log("Password updated for user:", response);
+    return response;
   }
 
   async logout(refreshToken: string) {

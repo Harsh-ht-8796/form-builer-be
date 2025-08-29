@@ -18,7 +18,7 @@ const routing_controllers_1 = require("routing-controllers");
 const express_xss_sanitizer_1 = require("express-xss-sanitizer");
 const handlingErrors_middleware_1 = __importDefault(require("./middlewares/handlingErrors.middleware"));
 const routingControllersUtils_1 = require("./utils/routingControllersUtils");
-const logger_1 = __importDefault(require("@utils/logger"));
+const logger_1 = __importDefault(require("./utils/logger"));
 const morgan_1 = __importDefault(require("morgan"));
 const path_1 = __importDefault(require("path"));
 class App {

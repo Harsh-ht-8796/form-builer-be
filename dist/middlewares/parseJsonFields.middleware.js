@@ -24,9 +24,6 @@ exports.parseJsonFieldsMiddleware = void 0;
 //     };
 // }
 const parseJsonFieldsMiddleware = (fieldsToParse) => (req, res, next) => {
-    console.log('[parseJsonFields] Middleware called', req);
-    console.log('[parseJsonFields] fieldsToParse:', fieldsToParse);
-    console.log('[parseJsonFields] req.body at start:', req.body);
     try {
         let ranLoop = false;
         for (const field of fieldsToParse) {

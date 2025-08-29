@@ -14,9 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IForm = exports.IFormField = exports.IFormSettings = void 0;
 const mongoose_1 = require("mongoose");
-const constants_1 = require("@common/constants");
+const constants_1 = require("../common/constants");
 const organization_model_1 = __importDefault(require("./organization.model"));
-const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
+const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class IFormSettings {
@@ -161,8 +161,8 @@ __decorate([
     __metadata("design:type", Boolean)
 ], IForm.prototype, "isActive", void 0);
 const formSchema = new mongoose_1.Schema({
-    orgId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Organization', required: true },
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    orgId: { type: mongoose_1.Schema.Types.ObjectId, ref: constants_1.MODELS.ORGANIZATIONS, required: true },
+    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: constants_1.MODELS.USERS, required: true },
     coverImage: { type: String, default: '' },
     logoImage: { type: String, default: '' },
     title: { type: String, default: '' },
@@ -188,6 +188,15 @@ const formSchema = new mongoose_1.Schema({
             required: { type: Boolean, default: false },
         },
     ],
+    status: {
+        type: String,
+        default: ["draft"],
+        required: false
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
     settings: {
         backgroundColor: { type: String, default: 'cyan' },
         headerImage: String,
@@ -195,7 +204,7 @@ const formSchema = new mongoose_1.Schema({
         visibility: {
             type: [String], // make it an array
             enum: ['public', 'private', 'domain_restricted'],
-            default: ['public'], // default as an array
+            default: [], // default as an array
         },
     }
 }, {

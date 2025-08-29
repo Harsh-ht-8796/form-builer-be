@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InviteRegisterArrayDto = void 0;
 const class_validator_1 = require("class-validator");
-const roles_1 = require("@common/types/roles");
+const roles_1 = require("../../../../common/types/roles");
 const class_transformer_1 = require("class-transformer");
 class InviteRegisterDto {
 }

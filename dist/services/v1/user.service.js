@@ -6,7 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const routing_controllers_1 = require("routing-controllers");
-const users_model_1 = __importDefault(require("@models/users.model"));
+const lodash_1 = require("lodash");
+const users_model_1 = __importDefault(require("../../models/users.model"));
 const dayjs_1 = __importDefault(require("dayjs"));
 class UserService {
     constructor() {
@@ -34,10 +35,20 @@ class UserService {
         if (existing) {
             throw new routing_controllers_1.BadRequestError(`Email already taken: ${existing.email}`);
         }
+        // Helper function to generate a random password
+        const generateRandomPassword = (length = 12) => {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        };
         // Add default password for each user
-        const inviteUsers = userData.map(user => (Object.assign(Object.assign({}, user), { password: "Test@123" })));
+        const inviteUsers = userData.map(user => (Object.assign(Object.assign({}, user), { password: generateRandomPassword() })));
+        const copyInviteUsers = (0, lodash_1.cloneDeep)(inviteUsers);
         const users = await this.userModel.insertMany(inviteUsers);
-        return users;
+        return copyInviteUsers;
     }
     async getUserByEmail(email) {
         return await this.userModel.findOne({ email });
@@ -50,12 +61,11 @@ class UserService {
     }
     async updateById(id, updateBody) {
         // prevent user change his email
-        const { username } = updateBody;
         const user = await this.getById(id);
         if (!user) {
             throw new routing_controllers_1.BadRequestError('User not found');
         }
-        Object.assign(user, Object.assign(Object.assign({}, user), { username }));
+        Object.assign(user, Object.assign(Object.assign({}, updateBody), { username: user.username, email: user.email }));
         await user.save();
         return user;
     }
@@ -163,6 +173,15 @@ class UserService {
         user.password = newPassword; // will be hashed by pre-save hook
         await user.save();
         return { message: 'Password updated successfully' };
+    }
+    // New function that accepts an array of emails and returns those already in the user collection
+    async getExistingEmails(emails) {
+        const existingUsers = await this.userModel
+            .find({ email: { $in: emails } })
+            .select('email')
+            .lean();
+        console.log({ emails: { $nin: emails } });
+        return existingUsers.map(user => user.email);
     }
 }
 exports.UserService = UserService;

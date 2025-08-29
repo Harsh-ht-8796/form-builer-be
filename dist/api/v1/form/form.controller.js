@@ -63,18 +63,21 @@ exports.FormController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
 const crypto_1 = __importDefault(require("crypto"));
-const roles_1 = require("@common/types/roles");
-const index_1 = require("@middlewares/index");
-const form_model_1 = __importStar(require("@models/form.model"));
-const v1_1 = require("@services/v1");
+const roles_1 = require("../../../common/types/roles");
+const index_1 = require("../../../middlewares/index");
+const form_model_1 = __importStar(require("../../../models/form.model"));
+const users_model_1 = require("../../../models/users.model");
+const v1_1 = require("../../../services/v1");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const form_dto_1 = __importStar(require("./dtos/form.dto"));
 const form_search_dto_1 = __importDefault(require("./dtos/form-search.dto"));
 const multer_1 = __importDefault(require("./multer"));
-const is_form_exists_1 = __importDefault(require("@middlewares/is.form.exists"));
+const is_form_exists_1 = __importDefault(require("../../../middlewares/is.form.exists"));
 const class_validator_1 = require("class-validator");
 const file_type_1 = require("file-type");
+const email_1 = require("../../../utils/email");
+const template_type_enum_1 = require("../../../common/types/template-type.enum");
 class UpdateVisibilityDto {
 }
 __decorate([
@@ -84,19 +87,28 @@ __decorate([
 ], UpdateVisibilityDto.prototype, "visibility", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEmail)({}, { each: true }),
     __metadata("design:type", Array)
 ], UpdateVisibilityDto.prototype, "allowedEmails", void 0);
+class UpdateIsReceiveResponse {
+}
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Object)
+], UpdateIsReceiveResponse.prototype, "isActive", void 0);
 let FormController = class FormController {
     constructor() {
         this.formService = new v1_1.FormService();
+        this.userService = new v1_1.UserService();
+        this.organizationService = new v1_1.OrganizationService();
     }
     async create(formData, user) {
         var _a;
         const createdBy = (_a = user === null || user === void 0 ? void 0 : user._id) === null || _a === void 0 ? void 0 : _a.toString();
         const orgId = user === null || user === void 0 ? void 0 : user.orgId;
         console.log(orgId);
-        const form = await this.formService.create(Object.assign(Object.assign(Object.assign({}, formData), { createdBy }), (orgId && orgId ? { orgId: orgId } : {})));
+        const form = await this.formService.create(Object.assign(Object.assign(Object.assign({}, formData), { status: "draft", createdBy }), (orgId && orgId ? { orgId: orgId } : {})));
         return form;
     }
     async getAll(limit = 10, page = 0) {
@@ -109,6 +121,40 @@ let FormController = class FormController {
         const { docs, meta } = await this.formService.findAll({ filter: rest, limit, page, user });
         return { docs, meta };
     }
+    async getAllUserReceivedForm(userDetails, query) {
+        const { limit, page } = query, rest = __rest(query, ["limit", "page"]);
+        const { docs, meta } = await this.formService.findAllReceivedForm({ filter: rest, limit, page, user: userDetails });
+        return { docs, meta };
+    }
+    async getUserForm(id) {
+        try {
+            const form = await this.formService.getByIdFilter(id, {
+                isActive: true,
+                "status": "draft"
+            });
+            if (!form) {
+                throw new Error('Form not found');
+            }
+            return form;
+        }
+        catch (err) {
+            console.log(err);
+            throw new Error(err.message || "Something goes wrong");
+        }
+    }
+    async getFormStatus(id) {
+        try {
+            const form = await this.formService.getFormStatusById(id);
+            if (!form) {
+                throw new Error('Form not found');
+            }
+            return form;
+        }
+        catch (err) {
+            console.log(err);
+            throw new Error("Something goes wrong");
+        }
+    }
     async get(id, next) {
         try {
             const form = await this.formService.getById(id);
@@ -118,29 +164,114 @@ let FormController = class FormController {
             return form;
         }
         catch (err) {
-            next(err);
+            throw new Error((err === null || err === void 0 ? void 0 : err.message) || "Something goes wrong");
         }
     }
-    async updateVisibility(id, updateData) {
+    async updateVisibility(id, userDetails, updateData) {
         const form = await this.formService.getById(id);
         if (!form) {
             throw new Error('Form not found');
         }
-        console.log("Form data===>", {
-            settings: Object.assign(Object.assign({}, form.settings), { visibility: updateData.visibility }),
-            allowedEmails: updateData.allowedEmails
+        const allowedVisibilityStatus = ["public", "private", "domain_restricted"];
+        const isPublished = allowedVisibilityStatus.some((status) => {
+            return updateData.visibility.includes(status);
         });
         const updatedForm = await this.formService.update(id, {
             settings: Object.assign(Object.assign({}, form.settings), { visibility: updateData.visibility }),
+            status: isPublished ? "published" : "draft",
             allowedEmails: updateData.allowedEmails
+        });
+        if (!updatedForm) {
+            throw new Error('Form update failed');
+        }
+        // If allowedEmails is provided, send an invitation email to each email address in parallel.
+        if (updateData.allowedEmails && updateData.allowedEmails.length > 0) {
+            const { username, orgId } = userDetails;
+            const alreadyExistingEmails = await this.userService.getExistingEmails(updateData.allowedEmails);
+            const usersNotRegistered = updateData.allowedEmails.filter(email => !alreadyExistingEmails.includes(email));
+            const orgName = (orgId === null || orgId === void 0 ? void 0 : orgId.name) || 'Organization';
+            const signupLink = 'https://example.com/login'; // update to your actual login URL
+            const modified = usersNotRegistered.map(email => {
+                return {
+                    email,
+                    roles: [roles_1.UserRole.USER],
+                    orgId: userDetails.orgId,
+                };
+            });
+            const inseredUser = await this.organizationService.userInvitation(modified);
+            const sentEmailUsers = inseredUser.map(user => ({
+                email: user.email,
+                password: user.password
+            }));
+            const emailPromises = sentEmailUsers.map(({ email, password }) => {
+                console.log("Sending email to:", process.env.FRONTEND_URL);
+                return (0, email_1.sendEmail)(template_type_enum_1.TemplateType.UserInvitation, {
+                    userName: "Client",
+                    orgName: userDetails.orgId.name || 'Organization',
+                    loginLink: `${process.env.FRONTEND_URL}/auth/otp-password-update?email=${email}&otp=${password}` || 'http://localhost:3000'
+                }, email);
+            });
+            const sendPrivateFormInvitationEmailPromises = updateData.allowedEmails.map(email => {
+                return (0, email_1.sendEmail)(template_type_enum_1.TemplateType.privateFormInvitation, {
+                    firstName: email.split('@')[0],
+                    platformName: process.env.PLATFORM_NAME || 'Our Platform',
+                    link: `${process.env.FRONTEND_URL}/form/${form._id}` || 'http://localhost:3000'
+                }, email);
+            });
+            // const emailPromises = usersNotRegistered.map(email =>
+            //   sendEmail(
+            //     TemplateType.UserInvitation,
+            //     {
+            //       userName: username || 'Admin',
+            //       orgName,
+            //       signupLink
+            //     },
+            //     email
+            //   )
+            // )
+            if (emailPromises.length) {
+                await Promise.all([...emailPromises,
+                    ...sendPrivateFormInvitationEmailPromises]);
+            }
+        }
+        return updatedForm;
+    }
+    async isReceiveResponse(id, updateData) {
+        const form = await this.formService.getByIdForStatus(id);
+        console.log({ form });
+        if (!form) {
+            throw new Error('Form not found 1');
+        }
+        const { isActive } = updateData;
+        const updatedForm = await this.formService.update(id, {
+            isActive
         });
         if (!updatedForm) {
             throw new Error('Form update failed');
         }
         return updatedForm;
     }
+    async getVisibilityAndEmails(id, next) {
+        try {
+            const result = await this.formService.getVisibilityAndEmails(id);
+            if (!result) {
+                throw new Error('Form not found');
+            }
+            return result;
+        }
+        catch (err) {
+            next(err);
+        }
+    }
     async update(id, formData) {
         const form = await this.formService.update(id, formData);
+        if (!form) {
+            throw new Error('Form not found');
+        }
+        return form;
+    }
+    async deleteImage(id, body) {
+        const form = await this.formService.deleteCoverOrLogo(id, body);
         if (!form) {
             throw new Error('Form not found');
         }
@@ -228,7 +359,41 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], FormController.prototype, "search", null);
 __decorate([
+    (0, routing_controllers_1.Get)('/received'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Get all forms', responses: form_dto_1.FormResponseSchema }),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
+    (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
+    (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole]),
+    __param(0, (0, routing_controllers_1.CurrentUser)()),
+    __param(1, (0, routing_controllers_1.QueryParams)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, form_search_dto_1.default]),
+    __metadata("design:returntype", Promise)
+], FormController.prototype, "getAllUserReceivedForm", null);
+__decorate([
     (0, routing_controllers_1.Get)('/:id'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Get a form by ID', responses: form_dto_1.FormResponseSchema }),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
+    (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
+    (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole]),
+    __param(0, (0, routing_controllers_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], FormController.prototype, "getUserForm", null);
+__decorate([
+    (0, routing_controllers_1.Get)('/:id/active-status'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Get a form by ID', responses: form_dto_1.FormResponseSchema }),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
+    (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
+    (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole]),
+    __param(0, (0, routing_controllers_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], FormController.prototype, "getFormStatus", null);
+__decorate([
+    (0, routing_controllers_1.Get)('/:id/user-view'),
     (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Get a form by ID', responses: form_dto_1.FormResponseSchema }),
     (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
     (0, routing_controllers_1.UseBefore)((0, index_1.conditionalAuth)()),
@@ -246,11 +411,34 @@ __decorate([
     (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
     (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
     __param(0, (0, routing_controllers_1.Param)('id')),
-    __param(1, (0, routing_controllers_1.Body)()),
+    __param(1, (0, routing_controllers_1.CurrentUser)()),
+    __param(2, (0, routing_controllers_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, UpdateVisibilityDto]),
+    __metadata("design:paramtypes", [Object, users_model_1.IUserWithOrganization, UpdateVisibilityDto]),
     __metadata("design:returntype", Promise)
 ], FormController.prototype, "updateVisibility", null);
+__decorate([
+    (0, routing_controllers_1.Put)('/:id/is-receive-response'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Update form visibility and allowed emails', responses: form_dto_1.FormResponseSchema }),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
+    (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
+    (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
+    __param(0, (0, routing_controllers_1.Param)('id')),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, UpdateIsReceiveResponse]),
+    __metadata("design:returntype", Promise)
+], FormController.prototype, "isReceiveResponse", null);
+__decorate([
+    (0, routing_controllers_1.Get)('/:id/visibility'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Get form visibility and allowed emails', responses: { '200': { description: 'Visibility and allowed emails' } } }),
+    (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
+    (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
+    __param(0, (0, routing_controllers_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Function]),
+    __metadata("design:returntype", Promise)
+], FormController.prototype, "getVisibilityAndEmails", null);
 __decorate([
     (0, routing_controllers_1.Put)('/:id'),
     (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Update an existing form', responses: form_dto_1.FormResponseSchema }),
@@ -265,6 +453,18 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], FormController.prototype, "update", null);
+__decorate([
+    (0, routing_controllers_1.Delete)('/:id/image'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Delete a form by ID', responses: form_dto_1.FormResponseSchema }),
+    (0, routing_controllers_openapi_1.ResponseSchema)(form_model_1.IForm),
+    (0, routing_controllers_1.UseBefore)((0, index_1.auth)()),
+    (0, routing_controllers_1.Authorized)([roles_1.UserRole.SUPER_ADMIN, roles_1.UserRole.ORG_ADMIN, roles_1.UserRole.TEAM_MEMBER]),
+    __param(0, (0, routing_controllers_1.Param)('id')),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, form_dto_1.DeleteImage]),
+    __metadata("design:returntype", Promise)
+], FormController.prototype, "deleteImage", null);
 __decorate([
     (0, routing_controllers_1.Delete)('/:id'),
     (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'Delete a form by ID', responses: form_dto_1.FormResponseSchema }),

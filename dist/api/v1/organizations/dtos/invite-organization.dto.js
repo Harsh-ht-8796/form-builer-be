@@ -15,12 +15,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserOrganizationResponseSchema = exports.UserOrganizationWithOrgIdDto = void 0;
 const class_validator_1 = require("class-validator");
 const invite_user_register_dto_1 = __importDefault(require("./invite-user-register.dto"));
+const class_transformer_1 = require("class-transformer");
+const organization_model_1 = require("../../../../models/organization.model");
 class UserOrganizationWithOrgIdDto extends invite_user_register_dto_1.default {
 }
 exports.UserOrganizationWithOrgIdDto = UserOrganizationWithOrgIdDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", Object)
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => Object) // Or a specific DTO if you have one for IOrganization
+    ,
+    __metadata("design:type", organization_model_1.IOrganization)
 ], UserOrganizationWithOrgIdDto.prototype, "orgId", void 0);
 exports.UserOrganizationResponseSchema = {
     '201': {

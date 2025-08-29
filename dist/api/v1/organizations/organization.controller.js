@@ -15,13 +15,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrganizationController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
-const roles_1 = require("@common/types/roles");
-const index_1 = require("@middlewares/index");
-const organization_model_1 = require("@models/organization.model");
-const users_model_1 = require("@models/users.model");
-const v1_1 = require("@services/v1");
+const roles_1 = require("../../../common/types/roles");
+const index_1 = require("../../../middlewares/index");
+const organization_model_1 = require("../../../models/organization.model");
+const users_model_1 = require("../../../models/users.model");
+const v1_1 = require("../../../services/v1");
 const organization_dto_1 = require("./dtos/organization.dto");
 const invite_user_register_dto_1 = require("./dtos/invite-user-register.dto");
+const email_1 = require("../../../utils/email");
+const template_type_enum_1 = require("../../../common/types/template-type.enum");
 let OrganizationController = class OrganizationController {
     constructor() {
         this.organizationService = new v1_1.OrganizationService();
@@ -37,14 +39,26 @@ let OrganizationController = class OrganizationController {
         const modified = userData.users.map(user => {
             return Object.assign(Object.assign({}, user), { orgId: userDetails.orgId });
         });
-        await this.organizationService.userInvitation(modified);
+        const inseredUser = await this.organizationService.userInvitation(modified);
+        const sentEmailUsers = inseredUser.map(user => ({
+            email: user.email,
+            password: user.password
+        }));
+        const emailPromises = sentEmailUsers.map(({ email, password }) => {
+            console.log("Sending email to:", process.env.FRONTEND_URL);
+            return (0, email_1.sendEmail)(template_type_enum_1.TemplateType.UserInvitation, {
+                userName: "Client",
+                orgName: userDetails.orgId.name || 'Organization',
+                loginLink: `${process.env.FRONTEND_URL}/auth/otp-password-update?email=${email}&otp=${password}` || 'http://localhost:3000'
+            }, email);
+        });
+        await Promise.all(emailPromises);
         return { message: "User successfully inviated" };
     }
     async mapTouser(organizationData, user) {
         var _a;
         const createdBy = (_a = user === null || user === void 0 ? void 0 : user._id) === null || _a === void 0 ? void 0 : _a.toString();
         const mappedOrgWithUser = await this.organizationService.mapToUser(Object.assign(Object.assign({}, organizationData), { createdBy }));
-        console.log({ mappedOrgWithUser });
         return mappedOrgWithUser;
     }
     async get(userDetails, next) {
@@ -106,7 +120,7 @@ __decorate([
     __param(0, (0, routing_controllers_1.Body)()),
     __param(1, (0, routing_controllers_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [invite_user_register_dto_1.InviteRegisterArrayDto, Object]),
+    __metadata("design:paramtypes", [invite_user_register_dto_1.InviteRegisterArrayDto, users_model_1.IUserWithOrganization]),
     __metadata("design:returntype", Promise)
 ], OrganizationController.prototype, "userInvite", null);
 __decorate([

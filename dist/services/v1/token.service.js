@@ -7,10 +7,12 @@ exports.TokenService = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const moment_1 = __importDefault(require("moment"));
 const routing_controllers_1 = require("routing-controllers");
-const constants_1 = require("@common/constants");
-const _config_1 = require("@config");
-const tokens_model_1 = __importDefault(require("@models/tokens.model"));
+const constants_1 = require("../../common/constants");
+const _config_1 = require("../../config");
+const tokens_model_1 = __importDefault(require("../../models/tokens.model"));
 const user_service_1 = require("./user.service");
+const email_1 = require("../../utils/email");
+const template_type_enum_1 = require("../../common/types/template-type.enum");
 class TokenService {
     constructor() {
         this.userService = new user_service_1.UserService();
@@ -65,8 +67,24 @@ class TokenService {
         }
         const expireIn = (0, moment_1.default)().add(_config_1.jwt.resetPasswordExpireIn, _config_1.jwt.resetPasswordExpireFormat);
         const resetPasswordToken = this.generateToken(user.id, expireIn.unix(), constants_1.TokenTypes.RESET_PASSWORD);
-        await this.saveToken(resetPasswordToken, user.id, expireIn.toDate(), constants_1.TokenTypes.RESET_PASSWORD);
+        await Promise.all([
+            this.saveToken(resetPasswordToken, user.id, expireIn.toDate(), constants_1.TokenTypes.RESET_PASSWORD),
+            (0, email_1.sendEmail)(template_type_enum_1.TemplateType.UserForgotPassword, {
+                userName: user.email || 'User',
+                resetUrl: `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetPasswordToken}`
+            }, email)
+        ]);
         return resetPasswordToken;
+    }
+    async generateAndSaveAccessToken(email) {
+        const user = await this.userService.getUserByEmail(email);
+        if (!user) {
+            throw new routing_controllers_1.NotFoundError('User not exists with this email');
+        }
+        const expireIn = (0, moment_1.default)().add(_config_1.jwt.accessExpireIn, _config_1.jwt.accessExpireFormat);
+        const accessToken = this.generateToken(user.id, expireIn.unix(), constants_1.TokenTypes.ACCESS);
+        await this.saveToken(accessToken, user.id, expireIn.toDate(), constants_1.TokenTypes.ACCESS);
+        return accessToken;
     }
 }
 exports.TokenService = TokenService;

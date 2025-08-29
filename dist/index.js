@@ -3,9 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = require("@v1/index");
+const index_1 = require("./api/v1/index");
 const app_1 = __importDefault(require("./app"));
-const _config_1 = require("@config");
+const _config_1 = require("./config");
 // function initSwagger(server: App) {
 //   const schemas = validationMetadatasToSchemas({
 //     classValidatorMetadataStorage: getMetadataStorage(),

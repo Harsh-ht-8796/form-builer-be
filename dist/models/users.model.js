@@ -45,14 +45,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IRoles = exports.IUser = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+exports.IRoles = exports.IUserWithOrganization = exports.IUser = void 0;
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const mongoose_1 = __importStar(require("mongoose"));
-const constants_1 = require("@common/constants");
-const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
-const roles_1 = require("@common/types/roles");
-const toJSON_plugin_1 = __importDefault(require("@utils/toJSON.plugin"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const constants_1 = require("../common/constants");
+const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
+const roles_1 = require("../common/types/roles");
+const toJSON_plugin_1 = __importDefault(require("../utils/toJSON.plugin"));
+const organization_model_1 = require("./organization.model");
+// Assuming you have an IOrganization interface/class defined in your project
 class IUser extends timestamp_interface_1.default {
 }
 exports.IUser = IUser;
@@ -73,7 +76,7 @@ __decorate([
     __metadata("design:type", Boolean)
 ], IUser.prototype, "isEmailVerified", void 0);
 __decorate([
-    (0, class_validator_1.IsMongoId)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], IUser.prototype, "orgId", void 0);
 __decorate([
@@ -86,6 +89,46 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], IUser.prototype, "profileImage", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], IUser.prototype, "isInitialPasswordUpdated", void 0);
+class IUserWithOrganization extends timestamp_interface_1.default {
+}
+exports.IUserWithOrganization = IUserWithOrganization;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IUserWithOrganization.prototype, "username", void 0);
+__decorate([
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], IUserWithOrganization.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IUserWithOrganization.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], IUserWithOrganization.prototype, "isEmailVerified", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => organization_model_1.IOrganization),
+    __metadata("design:type", Object)
+], IUserWithOrganization.prototype, "orgId", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsEnum)(roles_1.UserRole, { each: true }),
+    __metadata("design:type", Array)
+], IUserWithOrganization.prototype, "roles", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], IUserWithOrganization.prototype, "profileImage", void 0);
 class IRoles {
 }
 exports.IRoles = IRoles;
@@ -117,9 +160,14 @@ const userSchema = new mongoose_1.Schema({
     orgId: {
         type: mongoose_1.Types.ObjectId,
         default: null,
+        ref: constants_1.MODELS.ORGANIZATIONS,
         required: false
     },
     isEmailVerified: {
+        type: Boolean,
+        default: false,
+    },
+    isInitialPasswordUpdated: {
         type: Boolean,
         default: false,
     },
@@ -145,11 +193,11 @@ userSchema.pre('save', async function (next) {
     next();
 });
 userSchema.pre('insertMany', async function (next, docs) {
-    for (const doc of docs) {
+    await Promise.all(docs.map(async (doc) => {
         if (typeof doc.password === 'string') {
             doc.password = await bcrypt_1.default.hash(doc.password, 8);
         }
-    }
+    }));
     next();
 });
 userSchema.plugin(toJSON_plugin_1.default);

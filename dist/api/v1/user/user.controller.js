@@ -60,17 +60,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
-const _decorators_1 = require("@decorators");
+const _decorators_1 = require("../../../decorators");
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
 const crypto_1 = __importDefault(require("crypto"));
-const roles_1 = require("@common/types/roles");
-const auth_middleware_1 = __importDefault(require("@middlewares/auth.middleware"));
-const users_model_1 = __importStar(require("@models/users.model"));
-const v1_1 = require("@services/v1");
+const roles_1 = require("../../../common/types/roles");
+const auth_middleware_1 = __importDefault(require("../../../middlewares/auth.middleware"));
+const users_model_1 = __importStar(require("../../../models/users.model"));
+const v1_1 = require("../../../services/v1");
 const form_search_dto_1 = __importDefault(require("./form-search.dto"));
-const invite_organization_dto_1 = require("@v1/organizations/dtos/invite-organization.dto");
-const multer_1 = __importDefault(require("@v1/form/multer"));
+const invite_organization_dto_1 = require("../organizations/dtos/invite-organization.dto");
+const multer_1 = __importDefault(require("../form/multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const file_type_1 = require("file-type");
@@ -88,7 +88,6 @@ let UserController = class UserController {
         return { roles };
     }
     async getCurrentUser(userDetaills) {
-        console.log({ id: userDetaills.id });
         const user = await this.userService.getById(userDetaills.id);
         return user;
     }
@@ -113,7 +112,6 @@ let UserController = class UserController {
     }
     async deleteProfileImage(user) {
         // 1. Find user in DB
-        console.log({ id: user.id });
         const userDoc = await users_model_1.default.findById(user.id);
         if (!userDoc || !userDoc.profileImage) {
             throw new routing_controllers_1.BadRequestError('No profile image found to delete');
@@ -141,7 +139,6 @@ let UserController = class UserController {
         return { message: "User deleted successfully" };
     }
     async updateUser(userDetaills, updateBody) {
-        console.log({ updateBody });
         const user = await this.userService.updateById(userDetaills.id, updateBody);
         return { user };
     }
@@ -165,7 +162,6 @@ let UserController = class UserController {
             }
             const hash = crypto_1.default.createHash('sha256').update(buffer).digest('hex');
             result[`${key}Url`] = `/uploads/${file.filename}`;
-            console.log({ key });
             const updatedForm = await users_model_1.default.updateOne({ _id: user.id }, { [`${key}`]: `/uploads/${file.filename}` });
             console.log({ updatedForm });
             result[`${key}Hash`] = hash;
@@ -174,7 +170,6 @@ let UserController = class UserController {
     }
     //@UseBefore(validationMiddleware(ChangePasswordDto, 'body'))
     async changePassword(userData, currentUser) {
-        console.log({ id: currentUser.id });
         return await this.userService.changePassword(currentUser.id, userData.oldPassword, userData.newPassword);
     }
 };

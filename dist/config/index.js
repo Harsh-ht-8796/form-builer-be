@@ -17,7 +17,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.jwt = exports.SENTRY_DSN = exports.isTest = exports.isProduction = exports.CREDENTIALS = exports.CORS_ORIGINS = exports.DATABASE = exports.MONGO_URI = exports.PORT = void 0;
+exports.NODERED_URL = exports.jwt = exports.SENTRY_DSN = exports.isTest = exports.isProduction = exports.CREDENTIALS = exports.CORS_ORIGINS = exports.DATABASE = exports.MONGO_URI = exports.PORT = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config({ path: `.env.${process.env.NODE_ENV || 'development'}.local` });
 const checkEnv = (envVar, defaultValue) => {
@@ -48,5 +48,6 @@ exports.jwt = {
     resetPasswordExpireIn: checkEnv('JWT_RESET_PASSWORD_EXPIRE_IN'),
     resetPasswordExpireFormat: checkEnv('JWT_RESET_PASSWORD_EXPIRE_FORMAT'),
 };
+exports.NODERED_URL = checkEnv('APP_NODE_RED_URL', 'http://localhost:1880');
 __exportStar(require("./passport"), exports);
 //# sourceMappingURL=index.js.map

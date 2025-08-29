@@ -18,7 +18,7 @@ const routing_controllers_1 = require("routing-controllers");
 const express_xss_sanitizer_1 = require("express-xss-sanitizer");
 const handlingErrors_middleware_1 = __importDefault(require("./middlewares/handlingErrors.middleware"));
 const routingControllersUtils_1 = require("./utils/routingControllersUtils");
-const logger_1 = __importDefault(require("@utils/logger"));
+const logger_1 = __importDefault(require("./utils/logger"));
 const morgan_1 = __importDefault(require("morgan"));
 const path_1 = __importDefault(require("path"));
 class App {
@@ -26,7 +26,6 @@ class App {
         this.controllers = [];
         this.initWebServer = async () => {
             return new Promise(resolve => {
-                console.log(`✅ http://localhost:${this.port}`);
                 this.serverConnection = this.app.listen(this.port, () => {
                     var _a;
                     console.log(`✅  Ready on port http://localhost:${this.port}`);
@@ -35,11 +34,9 @@ class App {
             });
         };
         this.initServerWithDB = async () => {
-            console.log("Called initServerDB");
             await Promise.all([App.initDB(), this.initWebServer()]);
         };
         this.stopWebServer = async () => {
-            console.log("Called stopWebServer");
             return new Promise(resolve => {
                 var _a;
                 (_a = this.serverConnection) === null || _a === void 0 ? void 0 : _a.close(() => {

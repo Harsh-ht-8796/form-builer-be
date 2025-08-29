@@ -5,8 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.jwtStrategy = void 0;
 const passport_jwt_1 = require("passport-jwt");
-const constants_1 = require("@common/constants");
-const users_model_1 = __importDefault(require("@models/users.model"));
+const constants_1 = require("../common/constants");
+const users_model_1 = __importDefault(require("../models/users.model"));
 const index_1 = require("./index");
 const jwtOptions = {
     secretOrKey: index_1.jwt.secret,
@@ -19,7 +19,8 @@ const jwtVerify = async (payload, done) => {
         if (payload.type !== constants_1.TokenTypes.ACCESS) {
             throw new Error('Invalid token type');
         }
-        const user = await users_model_1.default.findById(payload.sub);
+        const user = await users_model_1.default.findById(payload.sub).populate("orgId");
+        console.log("User from JWT:", user);
         if (!user) {
             return done(null, false);
         }

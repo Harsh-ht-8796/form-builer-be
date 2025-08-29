@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireUser = exports.requireTeamMember = exports.requireOrgAdmin = exports.requireSuperAdmin = exports.checkRole = void 0;
 const routing_controllers_1 = require("routing-controllers");
-const roles_1 = require("@common/types/roles");
+const roles_1 = require("../common/types/roles");
 const checkRole = (requiredRoles, options = { requireAll: false, allowAdmins: true }) => {
     return (req, res, next) => {
         const user = req.user;

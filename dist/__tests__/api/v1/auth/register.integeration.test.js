@@ -15,11 +15,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const supertest_1 = __importDefault(require("supertest"));
-const db_1 = require("@__tests__/jest/db");
-const factories_1 = require("@__tests__/jest/factories");
-const factories_2 = require("@__tests__/jest/factories");
-const _app_1 = __importDefault(require("@app"));
-const index_1 = require("@v1/index");
+const db_1 = require("../../../jest/db");
+const factories_1 = require("../../../jest/factories");
+const factories_2 = require("../../../jest/factories");
+const _app_1 = __importDefault(require("../../../../app"));
+const index_1 = require("../../../../api/v1/index");
 let server;
 const baseUrl = '/api/v1/auth';
 describe('register test suit', () => {

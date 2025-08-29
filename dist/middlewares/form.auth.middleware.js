@@ -22,4 +22,4 @@ const auth = () => async (req, res, next) => {
         .catch(err => next(err));
 };
 exports.default = auth;
-//# sourceMappingURL=auth.middleware.js.map
+//# sourceMappingURL=form.auth.middleware.js.map

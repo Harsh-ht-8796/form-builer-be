@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrganizationService = void 0;
-const organization_model_1 = __importDefault(require("@models/organization.model"));
-const users_model_1 = __importDefault(require("@models/users.model"));
+const organization_model_1 = __importDefault(require("../../models/organization.model"));
+const users_model_1 = __importDefault(require("../../models/users.model"));
 const user_service_1 = require("./user.service");
 class OrganizationService {
     constructor() {
@@ -18,7 +18,7 @@ class OrganizationService {
     }
     async mapToUser(data) {
         const org = await this.organizationModel.create(data);
-        const updatedUser = this.userModel.updateOne({ _id: data.createdBy }, { $set: { orgId: org._id } }).exec();
+        const updatedUser = this.userModel.updateOne({ _id: data.createdBy }, { $set: { orgId: org._id, isInitialPasswordUpdated: true } }).exec();
         return updatedUser;
     }
     async userInvitation(data) {

@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
-const form_model_1 = __importDefault(require("@models/form.model"));
+const form_model_1 = __importDefault(require("../models/form.model"));
 const isFormExists = (compareField = 'id') => {
     return async (req, res, next) => {
         const id = req.params[compareField];

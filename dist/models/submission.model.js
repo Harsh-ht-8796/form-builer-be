@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ISubmission = void 0;
 const mongoose_1 = require("mongoose");
 const class_validator_1 = require("class-validator");
-const constants_1 = require("@common/constants");
-const timestamp_interface_1 = __importDefault(require("@common/interfaces/timestamp.interface"));
+const constants_1 = require("../common/constants");
+const timestamp_interface_1 = __importDefault(require("../common/interfaces/timestamp.interface"));
 const form_model_1 = __importDefault(require("./form.model"));
 // Class with validation decorators
 class ISubmission extends timestamp_interface_1.default {
@@ -42,15 +42,26 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsMongoId)(),
-    __metadata("design:type", mongoose_1.Types.ObjectId)
+    __metadata("design:type", Object)
 ], ISubmission.prototype, "submittedBy", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsMongoId)(),
+    __metadata("design:type", Object)
+], ISubmission.prototype, "orgId", void 0);
 // Mongoose schema
 const submissionSchema = new mongoose_1.Schema({
-    formId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Form', required: true },
+    formId: { type: mongoose_1.Schema.Types.ObjectId, ref: constants_1.MODELS.FORMS, required: true },
     submittedAt: { type: Date, default: Date.now },
+    orgId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        default: null,
+        required: false,
+        ref: constants_1.MODELS.ORGANIZATIONS
+    },
     data: { type: mongoose_1.Schema.Types.Mixed, required: true },
     accessibility: { type: String, default: 'public' },
-    submittedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    submittedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: constants_1.MODELS.USERS },
 }, {
     timestamps: true,
 });
@@ -58,7 +69,7 @@ const submissionSchema = new mongoose_1.Schema({
 submissionSchema.pre('save', async function (next) {
     try {
         if (this.formId) {
-            const formExists = await form_model_1.default.exists({ _id: this.formId });
+            const formExists = await form_model_1.default.exists({ _id: this.formId, isActive: true });
             if (!formExists) {
                 throw new Error('Invalid formId: Form does not exist');
             }

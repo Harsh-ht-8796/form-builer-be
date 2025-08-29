@@ -51,14 +51,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const routing_controllers_openapi_1 = require("routing-controllers-openapi");
-const users_model_1 = require("@models/users.model");
-const v1_1 = require("@services/v1");
+const users_model_1 = require("../../../models/users.model");
+const v1_1 = require("../../../services/v1");
 const forgotPassword_dto_1 = __importDefault(require("./dtos/forgotPassword.dto"));
 const login_dto_1 = __importStar(require("./dtos/login.dto"));
 const logout_dto_1 = __importDefault(require("./dtos/logout.dto"));
 const refreshToken_dto_1 = __importDefault(require("./dtos/refreshToken.dto"));
 const register_dto_1 = __importDefault(require("./dtos/register.dto"));
 const resetPassword_dto_1 = __importDefault(require("./dtos/resetPassword.dto"));
+const email_1 = require("../../../utils/email");
+const template_type_enum_1 = require("../../../common/types/template-type.enum");
+const verifyOtp_dto_1 = __importDefault(require("./dtos/verifyOtp.dto"));
+const setPassword_dto_1 = __importDefault(require("./dtos/setPassword.dto"));
 let AuthController = class AuthController {
     constructor() {
         this.tokenService = new v1_1.TokenService();
@@ -69,6 +73,7 @@ let AuthController = class AuthController {
     async register(userData) {
         const user = await this.userService.createUser(userData);
         const tokens = await this.tokenService.generateAuthTokens(user);
+        await (0, email_1.sendEmail)(template_type_enum_1.TemplateType.AdminSuccessfulSignup, { adminName: user.username, email: user.email }, user.email);
         return { user, tokens };
     }
     //@UseBefore(validationMiddleware(LoginDto, 'body'))
@@ -97,6 +102,26 @@ let AuthController = class AuthController {
     async resetPassword(userData) {
         await this.authService.resetPassword(userData.token, userData.password);
         return { message: 'password successfully updated' };
+    }
+    // @ResponseSchema(VerifyOtpResponse)
+    // @UseBefore(validationMiddleware(VerifyOtpDto, 'query'))
+    async verifyOtp(data) {
+        console.log("Verifying OTP for email:", data.email);
+        console.log("OTP provided:", data.otp);
+        const user = await this.authService.loginUserWithEmailAndPassword(data.email, data.otp);
+        const saveToken = await this.tokenService.generateAndSaveAccessToken(data.email);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return { accessToken: saveToken };
+    }
+    // @UseBefore(validationMiddleware(SetPasswordDto, 'body'))
+    async setPassword(data) {
+        const user = await this.authService.setPassword(data);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return { message: "Password set successfully" };
     }
 };
 exports.AuthController = AuthController;
@@ -165,6 +190,27 @@ __decorate([
     __metadata("design:paramtypes", [resetPassword_dto_1.default]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
+__decorate([
+    (0, routing_controllers_1.Get)('/verify-otp'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'verify OTP and return access token' })
+    // @ResponseSchema(VerifyOtpResponse)
+    // @UseBefore(validationMiddleware(VerifyOtpDto, 'query'))
+    ,
+    __param(0, (0, routing_controllers_1.QueryParams)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [verifyOtp_dto_1.default]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verifyOtp", null);
+__decorate([
+    (0, routing_controllers_1.Post)('/set-password'),
+    (0, routing_controllers_openapi_1.OpenAPI)({ summary: 'set user password with OTP verification and update isInitialPasswordUpdated' })
+    // @UseBefore(validationMiddleware(SetPasswordDto, 'body'))
+    ,
+    __param(0, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [setPassword_dto_1.default]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "setPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, routing_controllers_1.JsonController)('/v1/auth', { transformResponse: false })
 ], AuthController);

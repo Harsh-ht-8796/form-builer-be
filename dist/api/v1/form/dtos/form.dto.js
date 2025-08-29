@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FormResponseSchema = void 0;
+exports.DeleteImage = exports.FormResponseSchema = void 0;
 const class_validator_1 = require("class-validator");
 // OpenAPI response schema for form operations
 exports.FormResponseSchema = {
@@ -177,4 +177,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], FormDto.prototype, "createdBy", void 0);
+class DeleteImage {
+}
+exports.DeleteImage = DeleteImage;
+__decorate([
+    (0, class_validator_1.IsEnum)(['cover', 'logo']),
+    __metadata("design:type", String)
+], DeleteImage.prototype, "image", void 0);
 //# sourceMappingURL=form.dto.js.map

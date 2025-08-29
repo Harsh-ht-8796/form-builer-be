@@ -24,7 +24,7 @@ export class OrganizationService implements CRUD<IOrganizationSchema> {
 
     const updatedUser = this.userModel.updateOne(
       { _id: data.createdBy },
-      { $set: { orgId: org._id } }
+      { $set: { orgId: org._id, isInitialPasswordUpdated: true } }
     ).exec();
     return updatedUser;
   }
@@ -57,7 +57,7 @@ export class OrganizationService implements CRUD<IOrganizationSchema> {
   }
 
   async update(id: ObjectId, data: Partial<IOrganization>): Promise<IOrganizationSchema | null> {
-    
+
     return this.organizationModel.findByIdAndUpdate(id, data, { new: true });
   }
 

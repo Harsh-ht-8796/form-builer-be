@@ -89,7 +89,8 @@ export class UserService implements CRUD<IUserSchema> {
     return new Promise((resolve) => {
       resolve([
         { value: "super_admin", label: "Admin" },
-        { value: "member", label: "Member" }
+        // { value: "member", label: "Member" },
+        { value: "user", label: "User" },
       ]);
     });
   }

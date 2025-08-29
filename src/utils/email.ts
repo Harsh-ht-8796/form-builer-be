@@ -2,6 +2,7 @@ import Mustache from "mustache";
 import fs from "fs";
 import path from "path";
 import { TemplateType } from "@common/types/template-type.enum";
+import { NODERED_URL } from "@config";
 
 
 export const template = `
@@ -19,7 +20,7 @@ export const data = {
 };
 
 
-const NODERED_URL = process.env.NODERED_URL || "http://localhost:1880";
+// const NODERED_URL = process.env.NODERED_URL || "http://localhost:1880";
 
 export async function sendEmail(
   templateType: TemplateType,
@@ -50,16 +51,16 @@ export async function sendEmail(
     case TemplateType.PasswordResetSuccess:
       templateFile = "password-reset-success-email.html";
       break;
-   case TemplateType.formResponseNotificationForAdmin:
+    case TemplateType.formResponseNotificationForAdmin:
       templateFile = "form-response-notification-email.html";
       break;
-   case TemplateType.privateFormInvitation:
+    case TemplateType.privateFormInvitation:
       templateFile = "private-form-invitation-email.html";
       break;
-   case TemplateType.formEditNotificationForUser:
+    case TemplateType.formEditNotificationForUser:
       templateFile = "form-submission-confirmation-email.html";
       break;
-      default:
+    default:
       throw new Error(`Unknown template type: ${templateType}`);
   }
 
@@ -68,7 +69,6 @@ export async function sendEmail(
   const templateHtml = fs.readFileSync(templatePath, "utf8");
   const renderedHtml = Mustache.render(templateHtml, userData);
 
-  console.log({ renderedHtml, userData });
   return fetch(NODERED_URL + "/send-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

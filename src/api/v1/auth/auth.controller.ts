@@ -28,12 +28,17 @@ export class AuthController {
   @ResponseSchema(IUser)
   //@UseBefore(validationMiddleware(RegisterDto, 'body'))
   async register(@Body() userData: RegisterDto) {
-    const user = await this.userService.createUser(userData);
-    const tokens = await this.tokenService.generateAuthTokens(user);
-    await sendEmail(TemplateType.AdminSuccessfulSignup,
-      { adminName: user.username, email: user.email },
-      user.email);
-    return { user, tokens };
+    try {
+      const user = await this.userService.createUser(userData);
+      const tokens = await this.tokenService.generateAuthTokens(user);
+      await sendEmail(TemplateType.AdminSuccessfulSignup,
+        { adminName: user.username, email: user.email },
+        user.email);
+      return { user, tokens };
+    } catch (err) {
+      console.error("Error sending email:", err);
+      throw new Error("Failed to send email");
+    }
   }
 
 
@@ -73,7 +78,7 @@ export class AuthController {
   //@UseBefore(validationMiddleware(ForgotPasswordDto, 'body'))
   async forgotPassword(@Body() userData: ForgotPasswordDto) {
     const token = await this.tokenService.generateResetPasswordToken(userData.email);
-    
+
     // should use email service to send the token to email owner, not return it!
     return { token };
   }

@@ -68,7 +68,10 @@ export async function sendEmail(
   const templatePath = path.resolve(__dirname, "../../templates", templateFile);
   const templateHtml = fs.readFileSync(templatePath, "utf8");
   const renderedHtml = Mustache.render(templateHtml, userData);
-
+  console.log("Node-RED URL:", NODERED_URL);
+  console.log("Sending email to:", to);
+  console.log("Email subject:", "Test Email - " + templateType);
+  console.log("Rendered HTML:", renderedHtml);
   return fetch(NODERED_URL + "/send-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
